@@ -1,0 +1,341 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 10% 4%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 4%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 10% 94%;
+    --secondary-foreground: 220 10% 4%;
+
+    --muted: 220 10% 94%;
+    --muted-foreground: 220 5% 40%;
+
+    --accent: 220 10% 94%;
+    --accent-foreground: 220 10% 4%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.5rem;
+    
+    /* Sidebar colors */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-primary: 220 65% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 65% 90%;
+    --sidebar-accent-foreground: 220 10% 4%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 221.2 83.2% 53.3%;
+    
+    /* Status Colors */
+    --status-expired: 0 84% 60%;
+    --status-expired-foreground: 0 0% 100%;
+    --status-urgent: 35 92% 50%;
+    --status-urgent-foreground: 0 0% 100%;
+    --status-warning: 40 95% 60%;
+    --status-warning-foreground: 0 0% 0%;
+    --status-valid: 142 71% 45%;
+    --status-valid-foreground: 0 0% 100%;
+    --status-inactive: 220 10% 70%;
+    --status-inactive-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 220 10% 4%;
+    --foreground: 0 0% 100%;
+
+    --card: 220 10% 8%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 220 10% 8%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 10% 16%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 10% 16%;
+    --muted-foreground: 220 5% 65%;
+
+    --accent: 220 10% 16%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 74% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 16%;
+    --input: 220 10% 16%;
+    --ring: 220 65% 70%;
+    
+    /* Sidebar colors */
+    --sidebar-background: 220 10% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 220 65% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 65% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Add proper font for Arabic text */
+  .font-arabic {
+    font-family: "Noto Sans Arabic", "Noto Kufi Arabic", sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Arabic font family and RTL support */
+  .rtl-active {
+    direction: rtl;
+    unicode-bidi: bidi-override;
+  }
+  
+  .rtl-active .ltr {
+    direction: ltr;
+    unicode-bidi: embed;
+  }
+  
+  /* Helper classes for RTL support */
+  .rtl-active .flex:not(.no-rtl-flip) {
+    flex-direction: row-reverse;
+  }
+  
+  .rtl-active .rtl-flip {
+    transform: scaleX(-1);
+  }
+  
+  /* Fixed positioning for RTL */
+  .rtl-active .left-3 {
+    left: auto;
+    right: 0.75rem;
+  }
+  
+  .rtl-active .right-3 {
+    right: auto;
+    left: 0.75rem;
+  }
+  
+  .rtl-active .left-4 {
+    left: auto;
+    right: 1rem;
+  }
+  
+  .rtl-active .right-4 {
+    right: auto;
+    left: 1rem;
+  }
+
+  /* Text alignments for RTL */
+  .rtl-active .text-left {
+    text-align: right;
+  }
+  
+  .rtl-active .text-right {
+    text-align: left;
+  }
+  
+  /* Auto margins for RTL */
+  .rtl-active .ml-auto {
+    margin-left: 0;
+    margin-right: auto;
+  }
+  
+  .rtl-active .mr-auto {
+    margin-right: 0;
+    margin-left: auto;
+  }
+  
+  /* Common margin and padding for RTL */
+  .rtl-active .ml-1 {
+    margin-left: 0;
+    margin-right: 0.25rem;
+  }
+  
+  .rtl-active .ml-2 {
+    margin-left: 0;
+    margin-right: 0.5rem;
+  }
+  
+  .rtl-active .ml-3 {
+    margin-left: 0;
+    margin-right: 0.75rem;
+  }
+  
+  .rtl-active .ml-4 {
+    margin-left: 0;
+    margin-right: 1rem;
+  }
+  
+  .rtl-active .mr-1 {
+    margin-right: 0;
+    margin-left: 0.25rem;
+  }
+  
+  .rtl-active .mr-2 {
+    margin-right: 0;
+    margin-left: 0.5rem;
+  }
+  
+  .rtl-active .mr-3 {
+    margin-right: 0;
+    margin-left: 0.75rem;
+  }
+  
+  .rtl-active .mr-4 {
+    margin-right: 0;
+    margin-left: 1rem;
+  }
+  
+  .rtl-active .pl-3 {
+    padding-left: 0;
+    padding-right: 0.75rem;
+  }
+  
+  .rtl-active .pr-3 {
+    padding-right: 0;
+    padding-left: 0.75rem;
+  }
+  
+  .rtl-active .pl-10 {
+    padding-left: 0;
+    padding-right: 2.5rem;
+  }
+  
+  .rtl-active .pr-10 {
+    padding-right: 0;
+    padding-left: 2.5rem;
+  }
+  
+  /* Border adjustments for RTL */
+  .rtl-active .border-l {
+    border-left: none;
+    border-right: 1px solid;
+    @apply border-border;
+  }
+  
+  .rtl-active .border-r {
+    border-right: none;
+    border-left: 1px solid;
+    @apply border-border;
+  }
+  
+  .rtl-active .border-l-4 {
+    border-left-width: 0;
+    border-right-width: 4px;
+  }
+  
+  .rtl-active .border-r-4 {
+    border-right-width: 0;
+    border-left-width: 4px;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-in-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-in-out forwards;
+  }
+  
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* RTL animation adjustment */
+  .rtl-active .animate-slide-in-right {
+    animation: slideInLeft 0.3s ease-in-out forwards;
+  }
+  
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/50 rounded;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded hover:bg-muted-foreground/50 transition-colors;
+}
+
+/* Helper classes for direct RTL support without the .rtl-active parent */
+.ltr\:pl-10 {
+  padding-left: 2.5rem;
+}
+
+.rtl\:pr-10 {
+  padding-right: 2.5rem;
+}
+
+.ltr\:left-3 {
+  left: 0.75rem;
+}
+
+.rtl\:right-3 {
+  right: 0.75rem;
+}
+
