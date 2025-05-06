@@ -123,7 +123,7 @@ const LoginPage = () => {
           
           <Card className="border-2 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
             <CardHeader className="space-y-1 text-center pb-4">
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent pb-1">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#329D4B] to-[#2A8540] bg-clip-text text-transparent pb-1">
                 {isRTL ? 'تسجيل الدخول' : 'Sign In'}
               </CardTitle>
               <CardDescription className="text-base">
@@ -217,7 +217,7 @@ const LoginPage = () => {
                   <div className="transition-transform hover:scale-[1.01] active:scale-[0.98]">
                     <Button 
                       type="submit" 
-                      className="w-full py-6 text-base font-medium transition-all bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      className="w-full py-6 text-base font-medium transition-all bg-gradient-to-r from-[#329D4B] to-[#2A8540] hover:from-[#2A8540] hover:to-[#236D35]"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -259,7 +259,7 @@ const LoginPage = () => {
               <div className="transition-transform hover:scale-[1.01] active:scale-[0.98]">
                 <Button 
                   variant="outline" 
-                  className="w-full h-11 transition-all border-2 hover:border-blue-500 hover:text-blue-600 flex items-center justify-center gap-2" 
+                  className="w-full h-11 transition-all border-2 hover:border-[#329D4B] hover:text-[#329D4B] flex items-center justify-center gap-2" 
                   onClick={handleLoginWithGoogle}
                 >
                   <img 
@@ -279,7 +279,7 @@ const LoginPage = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setLanguage(currentLanguage === 'en' ? 'ar' : 'en')}
-                  className="w-full border-2 hover:border-indigo-500 hover:text-indigo-600 transition-all"
+                  className="w-full border-2 hover:border-[#329D4B] hover:text-[#329D4B] transition-all"
                 >
                   {isRTL ? (
                     <div className="flex items-center justify-center">
@@ -307,7 +307,7 @@ const LoginPage = () => {
       
       {/* Right side - Image/Illustration */}
       <div 
-        className="hidden lg:block lg:w-1/2 bg-gradient-to-r from-blue-500 to-indigo-600 relative overflow-hidden"
+        className="hidden lg:w-1/2 lg:block bg-gradient-to-r from-[#329D4B] to-[#2A8540] relative overflow-hidden"
       >
         <div className="absolute inset-0 flex items-center justify-center p-10">
           <div className="w-full max-w-xl text-white">

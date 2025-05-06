@@ -7,11 +7,28 @@ import { EquipmentDetail } from "@/components/equipment/EquipmentDetail";
 import { EquipmentHierarchy } from "@/components/equipment/EquipmentHierarchy";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/use-language";
-import { Lightbulb, Plus, Video } from "lucide-react";
+import { Lightbulb, Plus, Video, Upload } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2, PlusCircle } from "lucide-react";
 
 // Sample data (unchanged)
 const SAMPLE_EQUIPMENT: Equipment[] = [
@@ -35,7 +52,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "verified",
         issueDate: "2024-01-15",
         expiryDate: "2025-08-15",
-        issuedBy: "Safety Authority"
+        issuedBy: "Safety Authority",
       },
       {
         id: "d2",
@@ -44,7 +61,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "verified",
         issueDate: "2020-05-10",
         expiryDate: "2030-05-10",
-        issuedBy: "Manufacturer"
+        issuedBy: "Manufacturer",
       },
       {
         id: "d3",
@@ -53,9 +70,9 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "verified",
         issueDate: "2024-02-10",
         expiryDate: "2024-08-10",
-        issuedBy: "TechInspect Inc."
-      }
-    ]
+        issuedBy: "TechInspect Inc.",
+      },
+    ],
   },
   {
     id: "2",
@@ -76,7 +93,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "verified",
         issueDate: "2023-07-15",
         expiryDate: "2024-07-15",
-        issuedBy: "DMV"
+        issuedBy: "DMV",
       },
       {
         id: "d5",
@@ -85,10 +102,10 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "pending",
         issueDate: "2021-07-15",
         expiryDate: "2031-07-15",
-        issuedBy: "Ford"
-      }
+        issuedBy: "Ford",
+      },
     ],
-    parentEquipmentId: "1"
+    parentEquipmentId: "1",
   },
   {
     id: "3",
@@ -109,7 +126,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "verified",
         issueDate: "2022-01-20",
         expiryDate: "2025-01-20",
-        issuedBy: "Honda"
+        issuedBy: "Honda",
       },
       {
         id: "d7",
@@ -118,9 +135,9 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "pending",
         issueDate: "2023-05-05",
         expiryDate: "2024-05-05",
-        issuedBy: "ElecSafe Corp"
-      }
-    ]
+        issuedBy: "ElecSafe Corp",
+      },
+    ],
   },
   {
     id: "4",
@@ -141,9 +158,9 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "rejected",
         issueDate: "2024-01-30",
         expiryDate: "2024-03-01",
-        issuedBy: "Safety Dept"
-      }
-    ]
+        issuedBy: "Safety Dept",
+      },
+    ],
   },
   {
     id: "5",
@@ -164,7 +181,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "verified",
         issueDate: "2023-02-15",
         expiryDate: "2033-02-15",
-        issuedBy: "DeWalt"
+        issuedBy: "DeWalt",
       },
       {
         id: "d10",
@@ -173,23 +190,74 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         status: "pending",
         issueDate: "2023-08-10",
         expiryDate: "2024-08-10",
-        issuedBy: "ToolCal Inc."
-      }
+        issuedBy: "ToolCal Inc.",
+      },
     ],
-    parentEquipmentId: "3"
-  }
+    parentEquipmentId: "3",
+  },
+];
+
+// Equipment types data from Dashboard.tsx
+const equipmentTypes = [
+  {
+    name: "Crawler Crane",
+    image: "/images/Crawler Crane.png",
+    category: "heavy",
+  },
+  {
+    name: "Excavator",
+    image: "/images/Excavator.png",
+    category: "heavy",
+  },
+  {
+    name: "JCB",
+    image: "/images/JCB.png",
+    category: "heavy",
+  },
+  {
+    name: "Hlab",
+    image: "/images/hlab.png",
+    category: "heavy",
+  },
+  {
+    name: "Telehandler",
+    image: "/images/TELEHANDLER.png",
+    category: "heavy",
+  },
+  {
+    name: "Wheel Loader",
+    image: "/images/Wheelloader.png",
+    category: "heavy",
+  },
 ];
 
 const EquipmentRegistry = () => {
   const { t, currentLanguage } = useLanguage();
-  const isRTL = currentLanguage === 'ar';
+  const isRTL = currentLanguage === "ar";
   const [activeTab, setActiveTab] = useState("list");
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(SAMPLE_EQUIPMENT[0]);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(
+    SAMPLE_EQUIPMENT[0]
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEquipmentType, setSelectedEquipmentType] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSelectEquipment = (equipment: Equipment) => {
     setSelectedEquipment(equipment);
     setActiveTab("detail");
+  };
+
+  const simulateAction = (action: string) => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setIsModalOpen(false);
+      toast({
+        title: isRTL ? "نجاح" : "Success",
+        description: isRTL ? `تم إكمال ${action} بنجاح` : `${action} completed successfully`,
+      });
+    }, 2000);
   };
 
   return (
@@ -291,7 +359,10 @@ const EquipmentRegistry = () => {
           </TabsList>
 
           <TabsContent value="list" className="mt-6">
-            <EquipmentList equipment={SAMPLE_EQUIPMENT} onSelect={handleSelectEquipment} />
+            <EquipmentList
+              equipment={SAMPLE_EQUIPMENT}
+              onSelect={handleSelectEquipment}
+            />
           </TabsContent>
 
           <TabsContent value="detail" className="mt-6">
@@ -300,7 +371,9 @@ const EquipmentRegistry = () => {
             ) : (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">
-                  {isRTL ? "يرجى اختيار معدات لعرض التفاصيل" : "Please select an equipment to view details"}
+                  {isRTL
+                    ? "يرجى اختيار معدات لعرض التفاصيل"
+                    : "Please select an equipment to view details"}
                 </CardContent>
               </Card>
             )}
@@ -326,38 +399,209 @@ const EquipmentRegistry = () => {
           </Button>
         </div>
 
-        {/* Add Equipment Modal (Placeholder) */}
+        {/* Add Equipment Modal (Updated to match Dashboard.tsx) */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-[600px] md:max-w-[800px] lg:max-w-[1000px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
+              <DialogTitle>
                 {isRTL ? "إضافة معدات جديدة" : "Add New Equipment"}
               </DialogTitle>
               <DialogDescription>
                 {isRTL
-                  ? "أدخل تفاصيل المعدات لإضافتها إلى السجل"
-                  : "Enter equipment details to add to the registry"}
+                  ? "اختر نوع المعدات وأدخل التفاصيل لتسجيل معدات جديدة"
+                  : "Select equipment type and enter details to register new equipment"}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">{isRTL ? "اسم المعدات" : "Equipment Name"}*</Label>
-                  <Input id="name" placeholder={isRTL ? "أدخل الاسم" : "Enter name"} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="model">{isRTL ? "الموديل" : "Model"}*</Label>
-                  <Input id="model" placeholder={isRTL ? "أدخل الموديل" : "Enter model"} required />
+
+            <div className="grid gap-4 py-2">
+              {/* Equipment Type Selection with Images */}
+              <div className="space-y-2">
+                <Label>{isRTL ? "نوع المعدات" : "Equipment Type"}</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {equipmentTypes.map((type) => (
+                    <div
+                      key={type.name}
+                      className={`flex flex-col items-center p-2 border rounded-lg cursor-pointer transition-colors ${
+                        selectedEquipmentType === type.name
+                          ? "border-primary bg-primary/10"
+                          : "hover:border-primary/50 hover:bg-muted"
+                      }`}
+                      onClick={() => setSelectedEquipmentType(type.name)}
+                    >
+                      <img
+                        src={type.image}
+                        alt={type.name}
+                        className="w-24 h-24 object-contain mb-2"
+                      />
+                      <span className="text-sm font-medium text-center">
+                        {type.name}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              {/* Additional fields can be added here */}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    {isRTL ? "اسم المعدات" : "Equipment Name"}
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder={
+                      isRTL ? "مثال: Excavator XL3000" : "e.g. Excavator XL3000"
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="model">{isRTL ? "الطراز" : "Model"}</Label>
+                  <Input
+                    id="model"
+                    placeholder={isRTL ? "مثال: CAT 320" : "e.g. CAT 320"}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="serial">
+                    {isRTL ? "الرقم التسلسلي" : "Serial Number"}
+                  </Label>
+                  <Input
+                    id="serial"
+                    placeholder={
+                      isRTL ? "مثال: CAT320-45678" : "e.g. CAT320-45678"
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">{isRTL ? "الفئة" : "Category"}</Label>
+                  <Select
+                    defaultValue={
+                      equipmentTypes.find(
+                        (type) => type.name === selectedEquipmentType
+                      )?.category
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          isRTL ? "اختر الفئة" : "Select category"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="heavy">
+                        {isRTL ? "معدات ثقيلة" : "Heavy Equipment"}
+                      </SelectItem>
+                      <SelectItem value="light">
+                        {isRTL ? "مركبة خفيفة" : "Light Vehicle"}
+                      </SelectItem>
+                      <SelectItem value="power-tool">
+                        {isRTL ? "أداة كهربائية" : "Power Tool"}
+                      </SelectItem>
+                      <SelectItem value="safety">
+                        {isRTL ? "معدات السلامة" : "Safety Equipment"}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">
+                  {isRTL ? "الوصف" : "Description"}
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder={
+                    isRTL
+                      ? "وصف موجز للمعدات..."
+                      : "Brief description of the equipment..."
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{isRTL ? "الحالة الأولية" : "Initial Status"}</Label>
+                <div className="flex space-x-4 mt-1">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="active"
+                      name="status"
+                      className="form-radio"
+                    />
+                    <Label htmlFor="active" className="cursor-pointer">
+                      {isRTL ? "نشط" : "Active"}
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="maintenance"
+                      name="status"
+                      className="form-radio"
+                    />
+                    <Label htmlFor="maintenance" className="cursor-pointer">
+                      {isRTL ? "في الصيانة" : "In Maintenance"}
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="stored"
+                      name="status"
+                      className="form-radio"
+                    />
+                    <Label htmlFor="stored" className="cursor-pointer">
+                      {isRTL ? "مخزن" : "Stored"}
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{isRTL ? "الوثائق الأولية" : "Initial Documents"}</Label>
+                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {isRTL
+                      ? "اسحب وأسقط الملفات هنا أو انقر للتصفح"
+                      : "Drag & drop files here or click to browse"}
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-4">
+                    {isRTL ? "اختر الملفات" : "Select Files"}
+                  </Button>
+                </div>
+              </div>
             </div>
+
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">{isRTL ? "إلغاء" : "Cancel"}</Button>
-              </DialogClose>
-              <Button type="submit">{isRTL ? "إضافة" : "Add"}</Button>
+              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                {isRTL ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                onClick={() =>
+                  simulateAction(
+                    isRTL ? "تسجيل المعدات" : "Equipment registration"
+                  )
+                }
+                disabled={loading}
+                className="bg-status-valid hover:bg-status-valid/90"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isRTL ? "جارٍ المعالجة..." : "Processing..."}
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    {isRTL ? "تسجيل المعدات" : "Register Equipment"}
+                  </>
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

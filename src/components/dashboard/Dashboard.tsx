@@ -61,7 +61,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { cn } from "@/lib/utils";
 import { EquipmentCategory, OperationalStatus } from "@/types/equipment";
 
-// Define interface for equipment items
+// Define interfaces
 interface EquipmentItem {
   id: number;
   name: string;
@@ -70,9 +70,33 @@ interface EquipmentItem {
   category: EquipmentCategory;
   status: OperationalStatus;
   compliance: number;
+  image?: string;
 }
 
-// Mock data for equipment and alerts
+interface EquipmentType {
+  name: string;
+  image: string;
+  category: EquipmentCategory;
+}
+
+interface Alert {
+  id: number;
+  title: string;
+  description: string;
+  type: "urgent" | "warning" | "valid";
+  icon: React.ComponentType<{ className?: string }>;
+  date: string;
+}
+
+interface Activity {
+  id: number;
+  action: string;
+  details: string;
+  user: string;
+  timestamp: string;
+}
+
+// Mock data
 const equipmentItems: EquipmentItem[] = [
   {
     id: 1,
@@ -82,6 +106,7 @@ const equipmentItems: EquipmentItem[] = [
     category: "heavy",
     status: "active",
     compliance: 92,
+    image: "/images/Excavator.png",
   },
   {
     id: 2,
@@ -91,6 +116,7 @@ const equipmentItems: EquipmentItem[] = [
     category: "light",
     status: "maintenance",
     compliance: 65,
+    image: "/images/JCB.png",
   },
   {
     id: 3,
@@ -109,10 +135,44 @@ const equipmentItems: EquipmentItem[] = [
     category: "heavy",
     status: "decommissioned",
     compliance: 20,
+    image: "/images/WheelLoader.png",
   },
 ];
 
-const allAlerts = [
+const equipmentTypes: EquipmentType[] = [
+  {
+    name: "Crawler Crane",
+    image: "/images/Crawler Crane.png",
+    category: "heavy",
+  },
+  {
+    name: "Excavator",
+    image: "/images/Excavator.png",
+    category: "heavy",
+  },
+  {
+    name: "JCB",
+    image: "/images/JCB.png",
+    category: "heavy",
+  },
+  {
+    name: "Hlab",
+    image: "/images/hlab.png",
+    category: "heavy",
+  },
+  {
+    name: "Telehandler",
+    image: "/images/TELEHANDLER.png",
+    category: "heavy",
+  },
+  {
+    name: "Wheel Loader",
+    image: "/images/Wheelloader.png",
+    category: "heavy",
+  },
+];
+
+const allAlerts: Alert[] = [
   {
     id: 1,
     title: "5 Expiring Documents",
@@ -139,8 +199,7 @@ const allAlerts = [
   },
 ];
 
-// Mock recent activity data
-const recentActivities = [
+const recentActivities: Activity[] = [
   {
     id: 1,
     action: "Document Uploaded",
@@ -176,11 +235,11 @@ export function Dashboard() {
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(
     null
   );
+  const [selectedEquipmentType, setSelectedEquipmentType] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    // Get saved user role
     const savedRole = localStorage.getItem("userRole");
     if (
       savedRole &&
@@ -228,43 +287,53 @@ export function Dashboard() {
   );
 
   return (
-    <div className={cn("space-y-6 bg-background p-6", isRTL && "rtl")}>
+    <div
+      className={cn(
+        "min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 space-y-6",
+        isRTL && "rtl"
+      )}
+    >
       <WelcomeHeader />
 
-      {showExpiryAlert && (
-        <div className="fixed top-24 right-4 max-w-sm z-50 animate-fade-in">
-          <Card className="border-l-4 border-status-urgent shadow-lg transition-all hover:shadow-xl">
-            <CardContent className="flex items-center p-4">
-              <AlertTriangle className="h-6 w-6 text-status-urgent mr-4 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-sm text-foreground">
-                  {isRTL ? "تنبيه انتهاء الوثيقة" : "Document Expiry Alert"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {isRTL
-                    ? "شهادة الخدمة لـ Excavator XL2000 تنتهي خلال 5 أيام"
-                    : "Service Certificate for Excavator XL2000 expires in 5 days"}
-                </p>
-                <div className="flex space-x-2 mt-2">
-                  <Button size="sm" variant="outline" className="h-7 text-xs">
-                    {isRTL ? "عرض التفاصيل" : "View Details"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={dismissNotification}
-                  >
-                    {isRTL ? "تجاهل" : "Dismiss"}
-                  </Button>
+      {/* Equipment Showcase */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {equipmentTypes.slice(0, 5).map((type) => (
+          <div
+            key={type.name}
+            className="relative group cursor-pointer"
+            onClick={() => handleButtonClick("addEquipment")}
+            role="button"
+            aria-label={`Add ${type.name} equipment`}
+          >
+            <div className="overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-md transition-all">
+              <div className="p-2">
+                <div className="aspect-square relative">
+                  <img
+                    src={type.image}
+                    alt={type.name}
+                    className="absolute inset-0 w-full h-full object-contain p-4 transition-transform group-hover:scale-110"
+                  />
+                </div>
+                <div className="p-2 text-center">
+                  <p className="text-sm font-medium truncate">{type.name}</p>
+                  <CategoryBadge category={type.category} size="sm" className="mt-1" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <div className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <div className="text-center">
+                  <PlusCircle className="h-8 w-8 mx-auto mb-2" />
+                  <p className="text-sm font-medium">
+                    {isRTL ? "إضافة معدات جديدة" : "Add New Equipment"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Status Cards */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatusCard
           title={isRTL ? "إجمالي المعدات" : "Total Equipment"}
           value={28}
@@ -295,38 +364,39 @@ export function Dashboard() {
         />
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="w-full md:w-auto bg-muted rounded-lg p-1 grid grid-cols-4">
+        <TabsList className="w-full bg-gray-100 rounded-lg p-1 grid grid-cols-2 sm:grid-cols-4">
           <TabsTrigger
             value="overview"
-            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
           >
             {isRTL ? "نظرة عامة" : "Overview"}
           </TabsTrigger>
           <TabsTrigger
             value="checklist"
-            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
           >
             {isRTL ? "قوائم التحقق" : "Checklist Uploads"}
           </TabsTrigger>
           <TabsTrigger
             value="documents"
-            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
           >
             {isRTL ? "متتبع الوثائق" : "Document Tracker"}
           </TabsTrigger>
           <TabsTrigger
             value="maintenance"
-            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
           >
             {isRTL ? "جدول الصيانة" : "Maintenance Schedule"}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-5 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+            <Card className="col-span-1 lg:col-span-5 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
                 <div>
                   <CardTitle>
                     {isRTL ? "نظرة عامة على حالة المعدات" : "Equipment Status Overview"}
@@ -337,8 +407,8 @@ export function Dashboard() {
                       : "Monitor equipment compliance and documentation status"}
                   </CardDescription>
                 </div>
-                <div className="relative w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="relative w-full sm:w-64 mt-4 sm:mt-0">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                   <Input
                     placeholder={isRTL ? "البحث في المعدات..." : "Search equipment..."}
                     className="pl-8"
@@ -350,7 +420,7 @@ export function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border overflow-hidden">
-                  <div className="bg-muted/50 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+                  <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
                     <div className="col-span-4">{isRTL ? "المعدات" : "Equipment"}</div>
                     <div className="col-span-2">{isRTL ? "الفئة" : "Category"}</div>
                     <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
@@ -364,12 +434,14 @@ export function Dashboard() {
                       filteredEquipmentItems.map((item) => (
                         <div
                           key={item.id}
-                          className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-muted/50 cursor-pointer transition-colors"
+                          className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 cursor-pointer transition-colors"
                           onClick={() => handleButtonClick("equipmentDetail", item.id)}
+                          role="button"
+                          aria-label={`View details for ${item.name}`}
                         >
                           <div className="col-span-4">
                             <div className="font-medium">{item.name}</div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-gray-500">
                               {item.model} • {item.serialNumber}
                             </div>
                           </div>
@@ -380,14 +452,14 @@ export function Dashboard() {
                             <StatusBadge status={item.status} size="sm" />
                           </div>
                           <div className="col-span-2">
-                            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
                                 className={`h-full ${
                                   item.compliance > 80
-                                    ? "bg-status-valid"
+                                    ? "bg-green-500"
                                     : item.compliance > 50
-                                    ? "bg-status-warning"
-                                    : "bg-status-expired"
+                                    ? "bg-yellow-500"
+                                    : "bg-red-500"
                                 }`}
                                 style={{ width: `${item.compliance}%` }}
                               ></div>
@@ -396,13 +468,13 @@ export function Dashboard() {
                           </div>
                           <div className="col-span-2 text-sm">
                             <span
-                              className={`text-status-${
+                              className={`text-${
                                 item.compliance > 80
-                                  ? "valid"
+                                  ? "green"
                                   : item.compliance > 50
-                                  ? "warning"
-                                  : "urgent"
-                              } font-medium`}
+                                  ? "yellow"
+                                  : "red"
+                              }-500 font-medium`}
                             >
                               {item.compliance > 80
                                 ? "120 days"
@@ -414,7 +486,7 @@ export function Dashboard() {
                         </div>
                       ))
                     ) : (
-                      <div className="py-8 text-center text-muted-foreground">
+                      <div className="py-8 text-center text-gray-500">
                         {isRTL
                           ? "لا توجد معدات تطابق معايير البحث"
                           : "No equipment matches your search"}
@@ -425,7 +497,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="col-span-2 shadow-md hover:shadow-lg transition-shadow">
+            <Card className="col-span-1 lg:col-span-2 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>{isRTL ? "التنبيهات" : "Alerts"}</span>
@@ -437,6 +509,7 @@ export function Dashboard() {
                           size="sm"
                           className="h-8 w-8 p-0"
                           onClick={() => handleButtonClick("allAlerts")}
+                          aria-label={isRTL ? "عرض جميع التنبيهات" : "View all alerts"}
                         >
                           <Bell className="h-4 w-4" />
                         </Button>
@@ -456,17 +529,39 @@ export function Dashboard() {
                   {allAlerts.map((alert) => (
                     <div
                       key={alert.id}
-                      className={`border-l-4 border-status-${alert.type} p-3 bg-status-${alert.type}/10 rounded-lg transition-all hover:bg-status-${alert.type}/20`}
+                      className={`border-l-4 border-${
+                        alert.type === "urgent"
+                          ? "red"
+                          : alert.type === "warning"
+                          ? "yellow"
+                          : "green"
+                      }-500 p-3 bg-${
+                        alert.type === "urgent"
+                          ? "red"
+                          : alert.type === "warning"
+                          ? "yellow"
+                          : "green"
+                      }-50 rounded-lg transition-all hover:bg-${
+                        alert.type === "urgent"
+                          ? "red"
+                          : alert.type === "warning"
+                          ? "yellow"
+                          : "green"
+                      }-100`}
                     >
                       <div className="flex items-start">
                         <alert.icon
-                          className={`h-4 w-4 text-status-${alert.type} mr-2 mt-0.5 flex-shrink-0`}
+                          className={`h-4 w-4 text-${
+                            alert.type === "urgent"
+                              ? "red"
+                              : alert.type === "warning"
+                              ? "yellow"
+                              : "green"
+                          }-500 mr-2 mt-0.5 flex-shrink-0`}
                         />
                         <div>
                           <p className="text-sm font-medium">{alert.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {alert.description}
-                          </p>
+                          <p className="text-xs text-gray-500">{alert.description}</p>
                         </div>
                       </div>
                     </div>
@@ -485,8 +580,8 @@ export function Dashboard() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="col-span-2 shadow-md hover:shadow-lg transition-shadow">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="col-span-1 md:col-span-2 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle>{isRTL ? "سجل المعدات" : "Equipment Registry"}</CardTitle>
                 <CardDescription>
@@ -496,7 +591,7 @@ export function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center p-6">
-                <Truck className="h-32 w-32 mb-6 text-muted-foreground" />
+                <Truck className="h-32 w-32 mb-6 text-gray-400" />
                 <Button
                   asChild
                   className="bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-700 hover:to-emerald-600 transition-all"
@@ -525,10 +620,10 @@ export function Dashboard() {
                   <UserRoleBadge role="hse" />
                 </div>
                 <div className="pt-2 border-t">
-                  <p className="text-sm text-muted-foreground text-center">
+                  <p className="text-sm text-gray-500 text-center">
                     {isRTL ? "أنت مسجل الدخول كـ: " : "You are logged in as: "}
                     <span
-                      className="font-medium cursor-pointer text-primary hover:underline"
+                      className="font-medium cursor-pointer text-blue-600 hover:underline"
                       onClick={() => handleButtonClick("roleInfo")}
                     >
                       {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
@@ -552,7 +647,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-muted"
+                          className="w-full justify-start hover:bg-gray-100"
                           onClick={() => handleButtonClick("addEquipment")}
                         >
                           <Truck className="h-4 w-4 mr-2" />
@@ -571,7 +666,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-muted"
+                          className="w-full justify-start hover:bg-gray-100"
                           onClick={() => handleButtonClick("uploadDocument")}
                         >
                           <FileText className="h-4 w-4 mr-2" />
@@ -590,7 +685,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-muted"
+                          className="w-full justify-start hover:bg-gray-100"
                           onClick={() => handleButtonClick("scheduleInspection")}
                         >
                           <Calendar className="h-4 w-4 mr-2" />
@@ -609,7 +704,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-muted"
+                          className="w-full justify-start hover:bg-gray-100"
                         >
                           <BarChart3 className="h-4 w-4 mr-2" />
                           {isRTL ? "عرض التحليلات" : "View Analytics"}
@@ -640,14 +735,14 @@ export function Dashboard() {
                   {recentActivities.map((activity) => (
                     <div
                       key={activity.id}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <div>
                         <p className="text-sm font-medium">{activity.action}</p>
-                        <p className="text-xs text-muted-foreground">{activity.details}</p>
-                        <p className="text-xs text-muted-foreground">by {activity.user}</p>
+                        <p className="text-xs text-gray-500">{activity.details}</p>
+                        <p className="text-xs text-gray-500">by {activity.user}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                      <p className="text-xs text-gray-500">{activity.timestamp}</p>
                     </div>
                   ))}
                 </div>
@@ -667,10 +762,10 @@ export function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[400px] flex items-center justify-center flex-col">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                <ClipboardCheck className="h-8 w-8 text-muted-foreground" />
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <ClipboardCheck className="h-8 w-8 text-gray-400" />
               </div>
-              <p className="text-muted-foreground text-center mb-4 max-w-lg">
+              <p className="text-gray-500 text-center mb-4 max-w-lg">
                 {isRTL
                   ? "رفع قوائم التحقق وتقارير التفتيش لصيانة المعدات والامتثال. رفع قوائم التحقق اليومية للمشغلين والنماذج الشهرية للصيانة."
                   : "Upload checklists and inspection reports for equipment maintenance and compliance. Upload daily operator checklists and monthly maintenance forms."}
@@ -689,7 +784,7 @@ export function Dashboard() {
 
         <TabsContent value="documents">
           <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
               <div>
                 <CardTitle>{isRTL ? "متتبع الوثائق" : "Document Tracker"}</CardTitle>
                 <CardDescription>
@@ -698,8 +793,8 @@ export function Dashboard() {
                     : "Track all equipment documentation and certificates"}
                 </CardDescription>
               </div>
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="relative w-full sm:w-64 mt-4 sm:mt-0">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   placeholder={isRTL ? "البحث في الوثائق..." : "Search documents..."}
                   className="pl-8"
@@ -711,7 +806,7 @@ export function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border overflow-hidden">
-                <div className="bg-muted/50 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+                <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">{isRTL ? "الوثيقة" : "Document"}</div>
                   <div className="col-span-3">{isRTL ? "المعدات" : "Equipment"}</div>
                   <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
@@ -726,28 +821,28 @@ export function Dashboard() {
                       equipment: "Excavator XL2000",
                       status: "Valid",
                       expiry: "2025-08-15",
-                      statusClass: "bg-status-valid text-status-valid-foreground",
+                      statusClass: "bg-green-500 text-white",
                     },
                     {
                       name: "Registration",
                       equipment: "Utility Truck",
                       status: "Expiring Soon",
                       expiry: "2024-07-15",
-                      statusClass: "bg-status-warning text-status-warning-foreground",
+                      statusClass: "bg-yellow-500 text-white",
                     },
                     {
                       name: "Electrical Safety Inspection",
                       equipment: "Portable Generator",
                       status: "Critical",
                       expiry: "2024-05-05",
-                      statusClass: "bg-status-urgent text-status-urgent-foreground",
+                      statusClass: "bg-red-500 text-white",
                     },
                     {
                       name: "Decommission Report",
                       equipment: "Concrete Mixer",
                       status: "Expired",
                       expiry: "2024-03-01",
-                      statusClass: "bg-status-expired text-status-expired-foreground",
+                      statusClass: "bg-gray-500 text-white",
                     },
                   ]
                     .filter(
@@ -758,8 +853,10 @@ export function Dashboard() {
                     .map((doc, index) => (
                       <div
                         key={index}
-                        className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-muted/50 cursor-pointer transition-colors"
+                        className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => handleButtonClick("documentDetail")}
+                        role="button"
+                        aria-label={`View details for ${doc.name}`}
                       >
                         <div className="col-span-4 font-medium">{doc.name}</div>
                         <div className="col-span-3 text-sm">{doc.equipment}</div>
@@ -781,7 +878,7 @@ export function Dashboard() {
 
         <TabsContent value="maintenance">
           <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
               <div>
                 <CardTitle>{isRTL ? "جدول الصيانة" : "Maintenance Schedule"}</CardTitle>
                 <CardDescription>
@@ -790,8 +887,8 @@ export function Dashboard() {
                     : "View upcoming maintenance activities and service schedules"}
                 </CardDescription>
               </div>
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="relative w-full sm:w-64 mt-4 sm:mt-0">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   placeholder={isRTL ? "البحث في الصيانة..." : "Search maintenance..."}
                   className="pl-8"
@@ -803,7 +900,7 @@ export function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border overflow-hidden">
-                <div className="bg-muted/50 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+                <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">{isRTL ? "المعدات" : "Equipment"}</div>
                   <div className="col-span-3">{isRTL ? "النوع" : "Type"}</div>
                   <div className="col-span-3">{isRTL ? "التاريخ" : "Date"}</div>
@@ -816,28 +913,28 @@ export function Dashboard() {
                       type: "Routine Service",
                       date: "2024-05-15",
                       status: "Scheduled",
-                      statusClass: "bg-status-warning text-status-warning-foreground",
+                      statusClass: "bg-yellow-500 text-white",
                     },
                     {
                       equipment: "Utility Truck",
                       type: "Repair",
                       date: "2024-04-28",
                       status: "In Progress",
-                      statusClass: "bg-status-urgent text-status-urgent-foreground",
+                      statusClass: "bg-red-500 text-white",
                     },
                     {
                       equipment: "Portable Generator",
                       type: "Calibration",
                       date: "2024-05-05",
                       status: "Scheduled",
-                      statusClass: "bg-status-warning text-status-warning-foreground",
+                      statusClass: "bg-yellow-500 text-white",
                     },
                     {
                       equipment: "Wheel Loader",
                       type: "Overhaul",
                       date: "2024-04-15",
                       status: "Completed",
-                      statusClass: "bg-status-valid text-status-valid-foreground",
+                      statusClass: "bg-green-500 text-white",
                     },
                   ]
                     .filter(
@@ -848,7 +945,7 @@ export function Dashboard() {
                     .map((item, index) => (
                       <div
                         key={index}
-                        className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-muted/50 transition-colors"
+                        className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 transition-colors"
                       >
                         <div className="col-span-4 font-medium">{item.equipment}</div>
                         <div className="col-span-3 text-sm">{item.type}</div>
@@ -874,7 +971,7 @@ export function Dashboard() {
         open={openModal === "equipmentDetail"}
         onOpenChange={() => setOpenModal("")}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[600px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? "تفاصيل المعدات" : "Equipment Details"}</DialogTitle>
             <DialogDescription>
@@ -890,7 +987,7 @@ export function Dashboard() {
 
           {selectedEquipment && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>{isRTL ? "اسم المعدات" : "Equipment Name"}</Label>
                   <p className="mt-1 text-sm font-medium">{selectedEquipment.name}</p>
@@ -922,15 +1019,15 @@ export function Dashboard() {
               <div>
                 <Label>{isRTL ? "حالة الامتثال" : "Compliance Status"}</Label>
                 <div className="mt-2">
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className={`bg-status-${
+                      className={`bg-${
                         selectedEquipment.compliance > 80
-                          ? "valid"
+                          ? "green"
                           : selectedEquipment.compliance > 50
-                          ? "warning"
-                          : "expired"
-                      } h-full`}
+                          ? "yellow"
+                          : "red"
+                      }-500 h-full`}
                       style={{ width: `${selectedEquipment.compliance}%` }}
                     ></div>
                   </div>
@@ -938,7 +1035,7 @@ export function Dashboard() {
                     <span>
                       {selectedEquipment.compliance}% {isRTL ? "مكتمل" : "Complete"}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="text-gray-500">
                       {isRTL ? "آخر تحديث: 2024-04-23" : "Last updated: 2024-04-23"}
                     </span>
                   </div>
@@ -947,10 +1044,10 @@ export function Dashboard() {
 
               <div className="space-y-2">
                 <Label>{isRTL ? "الوثائق المرتبطة" : "Associated Documents"}</Label>
-                <div className="bg-muted/30 rounded-lg p-2 space-y-2">
-                  <div className="flex items-center justify-between rounded hover:bg-muted p-2">
+                <div className="bg-gray-50 rounded-lg p-2 space-y-2">
+                  <div className="flex items-center justify-between rounded hover:bg-gray-100 p-2">
                     <div className="flex items-center">
-                      <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                      <FileText className="h-4 w-4 text-gray-500 mr-2" />
                       <span className="text-sm">
                         {isRTL ? "شهادة التشغيل" : "Operation Certificate"}
                       </span>
@@ -959,9 +1056,9 @@ export function Dashboard() {
                       {isRTL ? "صالح حتى 2025-08-15" : "Valid until 2025-08-15"}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between rounded hover:bg-muted p-2">
+                  <div className="flex items-center justify-between rounded hover:bg-gray-100 p-2">
                     <div className="flex items-center">
-                      <File className="h-4 w-4 text-muted-foreground mr-2" />
+                      <File className="h-4 w-4 text-gray-500 mr-2" />
                       <span className="text-sm">
                         {isRTL ? "سجل الخدمة" : "Service Record"}
                       </span>
@@ -998,18 +1095,46 @@ export function Dashboard() {
 
       {/* Add New Equipment Modal */}
       <Dialog open={openModal === "addEquipment"} onOpenChange={() => setOpenModal("")}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[800px] lg:max-w-[1000px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? "إضافة معدات جديدة" : "Add New Equipment"}</DialogTitle>
             <DialogDescription>
               {isRTL
-                ? "أدخل التفاصيل لتسجيل معدات جديدة في النظام"
-                : "Enter details to register new equipment in the system"}
+                ? "اختر نوع المعدات وأدخل التفاصيل لتسجيل معدات جديدة"
+                : "Select equipment type and enter details to register new equipment"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{isRTL ? "نوع المعدات" : "Equipment Type"}</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {equipmentTypes.map((type) => (
+                  <div
+                    key={type.name}
+                    className={`flex flex-col items-center p-2 border rounded-lg cursor-pointer transition-colors ${
+                      selectedEquipmentType === type.name
+                        ? "border-blue-500 bg-blue-50"
+                        : "hover:border-blue-300 hover:bg-gray-50"
+                    }`}
+                    onClick={() => setSelectedEquipmentType(type.name)}
+                    role="button"
+                    aria-label={`Select ${type.name}`}
+                  >
+                    <img
+                      src={type.image}
+                      alt={type.name}
+                      className="w-24 h-24 object-contain mb-2"
+                    />
+                    <span className="text-sm font-medium text-center">
+                      {type.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">{isRTL ? "اسم المعدات" : "Equipment Name"}</Label>
                 <Input
@@ -1023,7 +1148,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="serial">{isRTL ? "الرقم التسلسلي" : "Serial Number"}</Label>
                 <Input
@@ -1033,7 +1158,11 @@ export function Dashboard() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">{isRTL ? "الفئة" : "Category"}</Label>
-                <Select>
+                <Select
+                  defaultValue={
+                    equipmentTypes.find((type) => type.name === selectedEquipmentType)?.category
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder={isRTL ? "اختر الفئة" : "Select category"} />
                   </SelectTrigger>
@@ -1067,7 +1196,7 @@ export function Dashboard() {
 
             <div className="space-y-2">
               <Label>{isRTL ? "الحالة الأولية" : "Initial Status"}</Label>
-              <div className="flex space-x-4 mt-1">
+              <div className="flex flex-wrap gap-4 mt-1">
                 <div className="flex items-center space-x-2">
                   <input
                     type="radio"
@@ -1106,9 +1235,9 @@ export function Dashboard() {
 
             <div className="space-y-2">
               <Label>{isRTL ? "الوثائق الأولية" : "Initial Documents"}</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
+                <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                <p className="mt-2 text-sm text-gray-500">
                   {isRTL
                     ? "اسحب وأسقط الملفات هنا أو انقر للتصفح"
                     : "Drag & drop files here or click to browse"}
@@ -1129,7 +1258,7 @@ export function Dashboard() {
                 simulateAction(isRTL ? "تسجيل المعدات" : "Equipment registration")
               }
               disabled={loading}
-              className="bg-status-valid hover:bg-status-valid/90"
+              className="bg-green-500 hover:bg-green-600"
             >
               {loading ? (
                 <>
@@ -1152,7 +1281,7 @@ export function Dashboard() {
         open={openModal === "uploadDocument"}
         onOpenChange={() => setOpenModal("")}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[600px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? "رفع وثيقة" : "Upload Document"}</DialogTitle>
             <DialogDescription>
@@ -1207,7 +1336,7 @@ export function Dashboard() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="issueDate">{isRTL ? "تاريخ الإصدار" : "Issue Date"}</Label>
                 <Input id="issueDate" type="date" />
@@ -1228,14 +1357,14 @@ export function Dashboard() {
 
             <div className="space-y-2">
               <Label>{isRTL ? "ملف الوثيقة" : "Document File"}</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
+                <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                <p className="mt-2 text-sm text-gray-500">
                   {isRTL
                     ? "اسحب وأسقط الملف هنا أو انقر للتصفح"
                     : "Drag & drop file here or click to browse"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   {isRTL
                     ? "الصيغ المدعومة: PDF، JPG، PNG (الحد الأقصى 10 ميغابايت)"
                     : "Supported formats: PDF, JPG, PNG (max 10MB)"}
@@ -1256,7 +1385,7 @@ export function Dashboard() {
                 simulateAction(isRTL ? "رفع الوثيقة" : "Document upload")
               }
               disabled={loading}
-              className="bg-status-valid hover:bg-status-valid/90"
+              className="bg-green-500 hover:bg-green-600"
             >
               {loading ? (
                 <>
@@ -1279,7 +1408,7 @@ export function Dashboard() {
         open={openModal === "scheduleInspection"}
         onOpenChange={() => setOpenModal("")}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[600px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? "جدولة التفتيش" : "Schedule Inspection"}</DialogTitle>
             <DialogDescription>
@@ -1338,7 +1467,7 @@ export function Dashboard() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="scheduledDate">
                   {isRTL ? "التاريخ المجدول" : "Scheduled Date"}
@@ -1426,7 +1555,7 @@ export function Dashboard() {
                 simulateAction(isRTL ? "جدولة التفتيش" : "Inspection scheduling")
               }
               disabled={loading}
-              className="bg-status-valid hover:bg-status-valid/90"
+              className="bg-green-500 hover:bg-green-600"
             >
               {loading ? (
                 <>
@@ -1446,7 +1575,7 @@ export function Dashboard() {
 
       {/* All Alerts Modal */}
       <Dialog open={openModal === "allAlerts"} onOpenChange={() => setOpenModal("")}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[600px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? "جميع الإشعارات" : "All Notifications"}</DialogTitle>
             <DialogDescription>
@@ -1461,18 +1590,42 @@ export function Dashboard() {
               {allAlerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className={`border-l-4 border-status-${alert.type} p-3 bg-status-${alert.type}/10 rounded-lg hover:bg-status-${alert.type}/20 cursor-pointer transition-colors flex items-start justify-between`}
+                  className={`border-l-4 border-${
+                    alert.type === "urgent"
+                      ? "red"
+                      : alert.type === "warning"
+                      ? "yellow"
+                      : "green"
+                  }-500 p-3 bg-${
+                    alert.type === "urgent"
+                      ? "red"
+                      : alert.type === "warning"
+                      ? "yellow"
+                      : "green"
+                  }-50 rounded-lg hover:bg-${
+                    alert.type === "urgent"
+                      ? "red"
+                      : alert.type === "warning"
+                      ? "yellow"
+                      : "green"
+                  }-100 cursor-pointer transition-colors flex items-start justify-between`}
                 >
                   <div className="flex items-start">
                     <alert.icon
-                      className={`h-5 w-5 text-status-${alert.type} mr-3 mt-0.5 flex-shrink-0`}
+                      className={`h-5 w-5 text-${
+                        alert.type === "urgent"
+                          ? "red"
+                          : alert.type === "warning"
+                          ? "yellow"
+                          : "green"
+                        }-500 mr-3 mt-0.5 flex-shrink-0`}
                     />
                     <div>
                       <p className="text-sm font-medium">{alert.title}</p>
-                      <p className="text-xs text-muted-foreground">{alert.description}</p>
+                      <p className="text-xs text-gray-500">{alert.description}</p>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground whitespace-nowrap ml-4">
+                  <div className="text-xs text-gray-500 whitespace-nowrap ml-4">
                     {alert.date}
                   </div>
                 </div>
@@ -1494,7 +1647,7 @@ export function Dashboard() {
         open={openModal === "equipmentRegistry"}
         onOpenChange={() => setOpenModal("")}
       >
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[800px] lg:max-w-[1200px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? "سجل المعدات" : "Equipment Registry"}</DialogTitle>
             <DialogDescription>
@@ -1505,8 +1658,8 @@ export function Dashboard() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button variant="outline" size="sm">
                   <FileText className="h-4 w-4 mr-2" />
                   {isRTL ? "تصدير" : "Export"}
@@ -1519,7 +1672,7 @@ export function Dashboard() {
               <Button
                 size="sm"
                 onClick={() => handleButtonClick("addEquipment")}
-                className="bg-status-valid hover:bg-status-valid/90"
+                className="bg-green-500 hover:bg-green-600"
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
                 {isRTL ? "إضافة معدات" : "Add Equipment"}
@@ -1527,7 +1680,7 @@ export function Dashboard() {
             </div>
 
             <div className="border rounded-lg overflow-hidden">
-              <div className="bg-muted/50 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+              <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3">{isRTL ? "اسم المعدات" : "Equipment Name"}</div>
                 <div className="col-span-2">{isRTL ? "الطراز/التسلسلي" : "Model/Serial"}</div>
                 <div className="col-span-2">{isRTL ? "الفئة" : "Category"}</div>
@@ -1539,10 +1692,10 @@ export function Dashboard() {
                 {filteredEquipmentItems.map((item) => (
                   <div
                     key={item.id}
-                    className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-muted/30 transition-colors"
+                    className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 transition-colors"
                   >
                     <div className="col-span-3 font-medium">{item.name}</div>
-                    <div className="col-span-2 text-sm text-muted-foreground">
+                    <div className="col-span-2 text-sm text-gray-500">
                       {item.model}
                       <br />
                       {item.serialNumber}
@@ -1554,15 +1707,15 @@ export function Dashboard() {
                       <StatusBadge status={item.status} size="sm" />
                     </div>
                     <div className="col-span-1">
-                      <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                          className={`bg-status-${
+                          className={`bg-${
                             item.compliance > 80
-                              ? "valid"
+                              ? "green"
                               : item.compliance > 50
-                              ? "warning"
-                              : "expired"
-                          } h-full`}
+                              ? "yellow"
+                              : "red"
+                          }-500 h-full`}
                           style={{ width: `${item.compliance}%` }}
                         ></div>
                       </div>
@@ -1577,6 +1730,7 @@ export function Dashboard() {
                               size="sm"
                               className="h-8 w-8 p-0"
                               onClick={() => handleButtonClick("equipmentDetail", item.id)}
+                              aria-label={isRTL ? "عرض التفاصيل" : "View Details"}
                             >
                               <Info className="h-4 w-4" />
                             </Button>
@@ -1592,6 +1746,7 @@ export function Dashboard() {
                               size="sm"
                               className="h-8 w-8 p-0"
                               onClick={() => handleButtonClick("editEquipment", item.id)}
+                              aria-label={isRTL ? "تعديل المعدات" : "Edit Equipment"}
                             >
                               <Settings className="h-4 w-4" />
                             </Button>
@@ -1609,6 +1764,7 @@ export function Dashboard() {
                               onClick={() =>
                                 handleButtonClick("scheduleInspection", item.id)
                               }
+                              aria-label={isRTL ? "جدولة التفتيش" : "Schedule Inspection"}
                             >
                               <Calendar className="h-4 w-4" />
                             </Button>
@@ -1632,7 +1788,7 @@ export function Dashboard() {
         open={openModal === "documentDetail"}
         onOpenChange={() => setOpenModal("")}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-[500px] md:max-w-[600px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? "تفاصيل الوثيقة" : "Document Details"}</DialogTitle>
             <DialogDescription>
@@ -1725,259 +1881,305 @@ export function Dashboard() {
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <File className="h-4 w-4 text-status-valid mr-2" />
-                    <span>{isRTL ? "تم التحقق من الوثيقة" : "Document verified"}</span>
+                  <File className="h-4 w-4 text-status-valid mr-2" />
+                    <span>
+                      {isRTL ? "تم التحقق من الوثيقة" : "Document verified"}
+                    </span>
                   </div>
-                  <span className="text-muted-foreground">2024-08-16</span>
+                  <span className="text-xs text-muted-foreground">
+                    {isRTL ? "بواسطة جيمس بيترسون • 2024-08-16" : "by James Peterson • 2024-08-16"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Upload className="h-4 w-4 text-muted-foreground mr-2" />
-                    <span>{isRTL ? "تم رفع الوثيقة" : "Document uploaded"}</span>
+                    <Upload className="h-4 w-4 text-status-warning mr-2" />
+                    <span>
+                      {isRTL ? "تم رفع الوثيقة" : "Document uploaded"}
+                    </span>
                   </div>
-                  <span className="text-muted-foreground">2024-08-16</span>
-                </div>
-                
+                  <span className="text-xs text-muted-foreground">
+                    {isRTL ? "بواسطة أحمد حسن • 2024-08-16" : "by Ahmed Hassan • 2024-08-16"}
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handleButtonClick("uploadDocument")}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {isRTL ? "رفع نسخة جديدة" : "Upload New Version"}
-              </Button>
-              <Button
-                onClick={() => simulateAction(isRTL ? "تحديث الوثيقة" : "Document update")}
-                disabled={loading}
-                className="bg-status-valid hover:bg-status-valid/90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isRTL ? "جارٍ المعالجة..." : "Processing..."}
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    {isRTL ? "تحديث الوثيقة" : "Update Document"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline">
+              {isRTL ? "تحميل نسخة" : "Download Copy"}
+            </Button>
+            <Button>
+              {isRTL ? "تحديث الوثيقة" : "Update Document"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Role Info Modal */}
-        <Dialog open={openModal === "roleInfo"} onOpenChange={() => setOpenModal("")}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{isRTL ? "معلومات الدور" : "Role Information"}</DialogTitle>
-              <DialogDescription>
-                {isRTL
-                  ? "تفاصيل صلاحيات ومسؤوليات الدور الحالي"
-                  : "Details about the permissions and responsibilities of your current role"}
-              </DialogDescription>
-            </DialogHeader>
+      {/* Edit Equipment Modal */}
+      <Dialog
+        open={openModal === "editEquipment"}
+        onOpenChange={() => setOpenModal("")}
+      >
+        <DialogContent className="sm:max-w-[500px] md:max-w-[600px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? "تعديل المعدات" : "Edit Equipment"}</DialogTitle>
+            <DialogDescription>
+              {selectedEquipment
+                ? isRTL
+                  ? `تعديل تفاصيل ${selectedEquipment.name}`
+                  : `Edit details for ${selectedEquipment.name}`
+                : isRTL
+                ? "تحديث معلومات المعدات"
+                : "Update equipment information"}
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="space-y-4">
-              <div>
-                <Label>{isRTL ? "الدور الحالي" : "Current Role"}</Label>
-                <p className="mt-1 text-sm font-medium capitalize">{userRole}</p>
-                <UserRoleBadge role={userRole} className="mt-2" />
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">{isRTL ? "اسم المعدات" : "Equipment Name"}</Label>
+                <Input
+                  id="edit-name"
+                  defaultValue={selectedEquipment?.name}
+                  placeholder={isRTL ? "مثال: Excavator XL3000" : "e.g. Excavator XL3000"}
+                />
               </div>
-
-              <div>
-                <Label>{isRTL ? "الوصف" : "Description"}</Label>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {userRole === "admin"
-                    ? isRTL
-                      ? "كمسؤول، لديك وصول كامل لإدارة المعدات، الوثائق، والمستخدمين."
-                      : "As an admin, you have full access to manage equipment, documents, and users."
-                    : userRole === "operator"
-                    ? isRTL
-                      ? "كمشغل، يمكنك عرض المعدات ورفع قوائم التحقق اليومية."
-                      : "As an operator, you can view equipment and upload daily checklists."
-                    : userRole === "maintenance"
-                    ? isRTL
-                      ? "كفني صيانة، يمكنك جدولة الصيانة وتحديث حالة المعدات."
-                      : "As a maintenance technician, you can schedule maintenance and update equipment status."
-                    : isRTL
-                      ? "كمسؤول HSE، يمكنك مراجعة الامتثال والتحقق من الوثائق."
-                      : "As an HSE officer, you can review compliance and verify documents."}
-                </p>
-              </div>
-
-              <div>
-                <Label>{isRTL ? "الصلاحيات" : "Permissions"}</Label>
-                <ul className="mt-1 text-sm text-muted-foreground list-disc list-inside">
-                  {userRole === "admin" && (
-                    <>
-                      <li>{isRTL ? "إدارة المستخدمين" : "Manage users"}</li>
-                      <li>{isRTL ? "تعديل جميع السجلات" : "Edit all records"}</li>
-                      <li>{isRTL ? "تكوين النظام" : "Configure system settings"}</li>
-                    </>
-                  )}
-                  {userRole === "operator" && (
-                    <>
-                      <li>{isRTL ? "عرض المعدات" : "View equipment"}</li>
-                      <li>{isRTL ? "رفع قوائم التحقق" : "Upload checklists"}</li>
-                    </>
-                  )}
-                  {userRole === "maintenance" && (
-                    <>
-                      <li>{isRTL ? "جدولة الصيانة" : "Schedule maintenance"}</li>
-                      <li>{isRTL ? "تحديث حالة المعدات" : "Update equipment status"}</li>
-                    </>
-                  )}
-                  {userRole === "hse" && (
-                    <>
-                      <li>{isRTL ? "مراجعة الوثائق" : "Review documents"}</li>
-                      <li>{isRTL ? "إصدار تقارير الامتثال" : "Generate compliance reports"}</li>
-                    </>
-                  )}
-                </ul>
+              <div className="space-y-2">
+                <Label htmlFor="edit-model">{isRTL ? "الطراز" : "Model"}</Label>
+                <Input
+                  id="edit-model"
+                  defaultValue={selectedEquipment?.model}
+                  placeholder={isRTL ? "مثال: CAT 320" : "e.g. CAT 320"}
+                />
               </div>
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpenModal("")}>
-                {isRTL ? "إغلاق" : "Close"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Equipment Modal */}
-        <Dialog
-          open={openModal === "editEquipment"}
-          onOpenChange={() => setOpenModal("")}
-        >
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{isRTL ? "تعديل المعدات" : "Edit Equipment"}</DialogTitle>
-              <DialogDescription>
-                {isRTL
-                  ? `تعديل تفاصيل ${selectedEquipment?.name || "المعدات"}`
-                  : `Edit details for ${selectedEquipment?.name || "equipment"}`}
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedEquipment && (
-              <div className="grid gap-4 py-2">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">{isRTL ? "اسم المعدات" : "Equipment Name"}</Label>
-                    <Input
-                      id="name"
-                      defaultValue={selectedEquipment.name}
-                      placeholder={isRTL ? "مثال: Excavator XL3000" : "e.g. Excavator XL3000"}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="model">{isRTL ? "الطراز" : "Model"}</Label>
-                    <Input
-                      id="model"
-                      defaultValue={selectedEquipment.model}
-                      placeholder={isRTL ? "مثال: CAT 320" : "e.g. CAT 320"}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="serial">{isRTL ? "الرقم التسلسلي" : "Serial Number"}</Label>
-                    <Input
-                      id="serial"
-                      defaultValue={selectedEquipment.serialNumber}
-                      placeholder={isRTL ? "مثال: CAT320-45678" : "e.g. CAT320-45678"}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">{isRTL ? "الفئة" : "Category"}</Label>
-                    <Select defaultValue={selectedEquipment.category}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={isRTL ? "اختر الفئة" : "Select category"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="heavy">
-                          {isRTL ? "معدات ثقيلة" : "Heavy Equipment"}
-                        </SelectItem>
-                        <SelectItem value="light">
-                          {isRTL ? "مركبة خفيفة" : "Light Vehicle"}
-                        </SelectItem>
-                        <SelectItem value="power-tool">
-                          {isRTL ? "أداة كهربائية" : "Power Tool"}
-                        </SelectItem>
-                        <SelectItem value="safety">
-                          {isRTL ? "معدات السلامة" : "Safety Equipment"}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">{isRTL ? "الحالة" : "Status"}</Label>
-                  <Select defaultValue={selectedEquipment.status}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isRTL ? "اختر الحالة" : "Select status"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">{isRTL ? "نشط" : "Active"}</SelectItem>
-                      <SelectItem value="maintenance">
-                        {isRTL ? "في الصيانة" : "In Maintenance"}
-                      </SelectItem>
-                      <SelectItem value="stored">{isRTL ? "مخزن" : "Stored"}</SelectItem>
-                      <SelectItem value="decommissioned">
-                        {isRTL ? "معطل" : "Decommissioned"}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">{isRTL ? "الوصف" : "Description"}</Label>
-                  <Textarea
-                    id="description"
-                    placeholder={
-                      isRTL ? "وصف موجز للمعدات..." : "Brief description of the equipment..."
-                    }
-                    defaultValue={selectedEquipment.name}
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-serial">{isRTL ? "الرقم التسلسلي" : "Serial Number"}</Label>
+                <Input
+                  id="edit-serial"
+                  defaultValue={selectedEquipment?.serialNumber}
+                  placeholder={isRTL ? "مثال: CAT320-45678" : "e.g. CAT320-45678"}
+                />
               </div>
-            )}
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">{isRTL ? "الفئة" : "Category"}</Label>
+                <Select defaultValue={selectedEquipment?.category}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={isRTL ? "اختر الفئة" : "Select category"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="heavy">
+                      {isRTL ? "معدات ثقيلة" : "Heavy Equipment"}
+                    </SelectItem>
+                    <SelectItem value="light">
+                      {isRTL ? "مركبة خفيفة" : "Light Vehicle"}
+                    </SelectItem>
+                    <SelectItem value="power-tool">
+                      {isRTL ? "أداة كهربائية" : "Power Tool"}
+                    </SelectItem>
+                    <SelectItem value="safety">
+                      {isRTL ? "معدات السلامة" : "Safety Equipment"}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpenModal("")}>
-                {isRTL ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button
-                onClick={() =>
-                  simulateAction(isRTL ? "تعديل المعدات" : "Equipment update")
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">{isRTL ? "الوصف" : "Description"}</Label>
+              <Textarea
+                id="edit-description"
+                placeholder={
+                  isRTL ? "وصف موجز للمعدات..." : "Brief description of the equipment..."
                 }
-                disabled={loading}
-                className="bg-status-valid hover:bg-status-valid/90"
-              >
-                {loading ? (
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{isRTL ? "الحالة" : "Status"}</Label>
+              <div className="flex space-x-4 mt-1">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="edit-active"
+                    name="edit-status"
+                    className="form-radio"
+                    defaultChecked={selectedEquipment?.status === "active"}
+                  />
+                  <Label htmlFor="edit-active" className="cursor-pointer">
+                    {isRTL ? "نشط" : "Active"}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="edit-maintenance"
+                    name="edit-status"
+                    className="form-radio"
+                    defaultChecked={selectedEquipment?.status === "maintenance"}
+                  />
+                  <Label htmlFor="edit-maintenance" className="cursor-pointer">
+                    {isRTL ? "في الصيانة" : "In Maintenance"}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="edit-decommissioned"
+                    name="edit-status"
+                    className="form-radio"
+                    defaultChecked={selectedEquipment?.status === "decommissioned"}
+                  />
+                  <Label htmlFor="edit-decommissioned" className="cursor-pointer">
+                    {isRTL ? "معطل" : "Decommissioned"}
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenModal("")}>
+              {isRTL ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button
+              onClick={() =>
+                simulateAction(isRTL ? "تحديث المعدات" : "Equipment update")
+              }
+              disabled={loading}
+              className="bg-status-valid hover:bg-status-valid/90"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isRTL ? "جارٍ التحديث..." : "Updating..."}
+                </>
+              ) : (
+                <>
+                  <Settings className="mr-2 h-4 w-4" />
+                  {isRTL ? "تحديث المعدات" : "Update Equipment"}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Info Modal */}
+      <Dialog open={openModal === "roleInfo"} onOpenChange={() => setOpenModal("")}>
+        <DialogContent className="sm:max-w-[400px] md:max-w-[500px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? "معلومات الدور" : "Role Information"}</DialogTitle>
+            <DialogDescription>
+              {isRTL
+                ? "تفاصيل حول دورك وأذوناتك"
+                : "Details about your role and permissions"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>{isRTL ? "دورك الحالي" : "Your Current Role"}</Label>
+              <div className="mt-2">
+                <UserRoleBadge role={userRole} />
+              </div>
+            </div>
+
+            <div>
+              <Label>{isRTL ? "الأذونات" : "Permissions"}</Label>
+              <ul className="mt-2 space-y-2 text-sm">
+                {userRole === "admin" && (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isRTL ? "جارٍ المعالجة..." : "Processing..."}
-                  </>
-                ) : (
-                  <>
-                    <Settings className="mr-2 h-4 w-4" />
-                    {isRTL ? "تحديث" : "Update"}
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "الكل" : "All"}
+                      </Badge>
+                      <span>{isRTL ? "الوصول الكامل لإدارة النظام" : "Full system management access"}</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "المعدات" : "Equipment"}
+                      </Badge>
+                      <span>{isRTL ? "إضافة/تعديل/حذف المعدات" : "Add/Edit/Delete equipment"}</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "المستخدمون" : "Users"}
+                      </Badge>
+                      <span>{isRTL ? "إدارة أدوار المستخدمين والأذونات" : "Manage user roles and permissions"}</span>
+                    </li>
                   </>
                 )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
+                {userRole === "operator" && (
+                  <>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "المعدات" : "Equipment"}
+                      </Badge>
+                      <span>{isRTL ? "عرض تفاصيل المعدات" : "View equipment details"}</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "الإبلاغ" : "Reporting"}
+                      </Badge>
+                      <span>{isRTL ? "إرسال تقارير الحالة" : "Submit status reports"}</span>
+                    </li>
+                  </>
+                )}
+                {userRole === "maintenance" && (
+                  <>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "الصيانة" : "Maintenance"}
+                      </Badge>
+                      <span>{isRTL ? "جدولة وتحديث أنشطة الصيانة" : "Schedule and update maintenance activities"}</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "الوثائق" : "Documents"}
+                      </Badge>
+                      <span>{isRTL ? "رفع تقارير الصيانة" : "Upload maintenance reports"}</span>
+                    </li>
+                  </>
+                )}
+                {userRole === "hse" && (
+                  <>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "الامتثال" : "Compliance"}
+                      </Badge>
+                      <span>{isRTL ? "مراجعة وتحديث حالة الامتثال" : "Review and update compliance status"}</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Badge className="mr-2 bg-status-valid">
+                        {isRTL ? "التفتيش" : "Inspections"}
+                      </Badge>
+                      <span>{isRTL ? "إجراء تفتيشات السلامة" : "Conduct safety inspections"}</span>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+
+            <div className="border-t pt-4">
+              <p className="text-sm text-muted-foreground">
+                {isRTL
+                  ? "لطلب تغيير الدور، يرجى التواصل مع مسؤول النظام."
+                  : "To request a role change, please contact your system administrator."}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setOpenModal("")}>
+              {isRTL ? "إغلاق" : "Close"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

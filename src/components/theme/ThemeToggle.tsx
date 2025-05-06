@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
@@ -6,12 +5,22 @@ import { Moon, Sun } from "lucide-react";
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // Check the system theme on mount and set it
+  // Initialize theme based on saved preference or default to light
   useEffect(() => {
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-    setTheme(document.documentElement.classList.contains("dark") ? "dark" : systemTheme);
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
+    
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } else {
+      // Default to light mode
+      setTheme("light");
+      document.documentElement.classList.remove("dark");
+    }
   }, []);
 
   // Toggle theme
@@ -28,27 +37,6 @@ export function ThemeToggle() {
     // Save user preference
     localStorage.setItem("theme", newTheme);
   };
-
-  // Initialize theme based on saved preference or system preference
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-    
-    if (savedTheme) {
-      setTheme(savedTheme);
-      if (savedTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    } else {
-      // Check for system preference
-      const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if (systemDarkMode) {
-        setTheme("dark");
-        document.documentElement.classList.add("dark");
-      }
-    }
-  }, []);
 
   return (
     <Button 

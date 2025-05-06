@@ -62,7 +62,17 @@ const translations: Record<string, Record<string, string>> = {
     "system_status": "System Status",
     "last_updated": "Last updated",
     "learn_more": "Learn More",
-    "color_codes": "Color Codes"
+    "color_codes": "Color Codes",
+    // Missing translations added
+    "ago": "ago",
+    "main": "Main",
+    "management": "Management",
+    "notificationPreferences": "Notification Preferences",
+    "howItWorks": "How It Works",
+    "certifications": "Certifications",
+    "scheduling": "Scheduling",
+    "users": "Users",
+    "documents": "Documents"
   },
   ar: {
     "dashboard": "لوحة القيادة",
@@ -116,7 +126,17 @@ const translations: Record<string, Record<string, string>> = {
     "system_status": "حالة النظام",
     "last_updated": "آخر تحديث",
     "learn_more": "معرفة المزيد",
-    "color_codes": "رموز الألوان"
+    "color_codes": "رموز الألوان",
+    // Missing translations added
+    "ago": "منذ",
+    "main": "الرئيسية",
+    "management": "الإدارة",
+    "notificationPreferences": "تفضيلات الإشعارات",
+    "howItWorks": "كيف يعمل النظام",
+    "certifications": "الشهادات",
+    "scheduling": "الجدولة",
+    "users": "المستخدمون",
+    "documents": "المستندات"
   }
 };
 
