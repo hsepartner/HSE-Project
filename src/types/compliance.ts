@@ -13,7 +13,7 @@ export interface ChecklistItem {
   status: 'passed' | 'failed' | 'not-checked';
   notes?: string;
 }
-
+// types
 export interface InspectionChecklist {
   id: string;
   title: string;
