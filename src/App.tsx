@@ -39,6 +39,7 @@ const Scheduling = React.lazy(() => import("./pages/Scheduling"));
 const Users = React.lazy(() => import("./pages/Users"));
 const Documents = React.lazy(() => import("./pages/Documents"));
 const Settings = React.lazy(() => import("./pages/Settings"));
+const OperatorManagement = React.lazy(() => import("./pages/OperatorManagement"));
 
 const Loading = () => (
   <div className="flex items-center justify-center h-screen">
@@ -271,6 +272,17 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Suspense fallback={<Loading />}>
               <Settings />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/operators"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <OperatorManagement />
             </Suspense>
           </ProtectedRoute>
         }

@@ -289,7 +289,7 @@ export function Dashboard() {
   return (
     <div
       className={cn(
-        "min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 space-y-6",
+        "min-h-screen bg-background p-4 sm:p-6 lg:p-8 space-y-6",
         isRTL && "rtl"
       )}
     >
@@ -297,7 +297,7 @@ export function Dashboard() {
 
       {/* Equipment Showcase */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {equipmentTypes.slice(0, 5).map((type) => (
+        {equipmentTypes.slice(0, 5).map((type, index) => (
           <div
             key={type.name}
             className="relative group cursor-pointer"
@@ -305,9 +305,12 @@ export function Dashboard() {
             role="button"
             aria-label={`Add ${type.name} equipment`}
           >
-            <div className="overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-md transition-all">
+            <div className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all">
               <div className="p-2">
                 <div className="aspect-square relative">
+                  <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                    {index + 1}
+                  </div>
                   <img
                     src={type.image}
                     alt={type.name}
@@ -366,28 +369,28 @@ export function Dashboard() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="w-full bg-gray-100 rounded-lg p-1 grid grid-cols-2 sm:grid-cols-4">
+        <TabsList className="w-full bg-muted rounded-lg p-1 grid grid-cols-2 sm:grid-cols-4">
           <TabsTrigger
             value="overview"
-            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
           >
             {isRTL ? "نظرة عامة" : "Overview"}
           </TabsTrigger>
           <TabsTrigger
             value="checklist"
-            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
           >
             {isRTL ? "قوائم التحقق" : "Checklist Uploads"}
           </TabsTrigger>
           <TabsTrigger
             value="documents"
-            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
           >
             {isRTL ? "متتبع الوثائق" : "Document Tracker"}
           </TabsTrigger>
           <TabsTrigger
             value="maintenance"
-            className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow"
+            className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
           >
             {isRTL ? "جدول الصيانة" : "Maintenance Schedule"}
           </TabsTrigger>
@@ -408,7 +411,7 @@ export function Dashboard() {
                   </CardDescription>
                 </div>
                 <div className="relative w-full sm:w-64 mt-4 sm:mt-0">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={isRTL ? "البحث في المعدات..." : "Search equipment..."}
                     className="pl-8"
@@ -420,7 +423,7 @@ export function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border overflow-hidden">
-                  <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+                  <div className="bg-muted py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
                     <div className="col-span-4">{isRTL ? "المعدات" : "Equipment"}</div>
                     <div className="col-span-2">{isRTL ? "الفئة" : "Category"}</div>
                     <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
@@ -434,14 +437,14 @@ export function Dashboard() {
                       filteredEquipmentItems.map((item) => (
                         <div
                           key={item.id}
-                          className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 cursor-pointer transition-colors"
+                          className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-muted/50 cursor-pointer transition-colors"
                           onClick={() => handleButtonClick("equipmentDetail", item.id)}
                           role="button"
                           aria-label={`View details for ${item.name}`}
                         >
                           <div className="col-span-4">
                             <div className="font-medium">{item.name}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               {item.model} • {item.serialNumber}
                             </div>
                           </div>
@@ -452,7 +455,7 @@ export function Dashboard() {
                             <StatusBadge status={item.status} size="sm" />
                           </div>
                           <div className="col-span-2">
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                               <div
                                 className={`h-full ${
                                   item.compliance > 80
@@ -486,7 +489,7 @@ export function Dashboard() {
                         </div>
                       ))
                     ) : (
-                      <div className="py-8 text-center text-gray-500">
+                      <div className="py-8 text-center text-muted-foreground">
                         {isRTL
                           ? "لا توجد معدات تطابق معايير البحث"
                           : "No equipment matches your search"}
@@ -541,13 +544,25 @@ export function Dashboard() {
                           : alert.type === "warning"
                           ? "yellow"
                           : "green"
-                      }-50 rounded-lg transition-all hover:bg-${
+                      }-50 dark:bg-${
                         alert.type === "urgent"
                           ? "red"
                           : alert.type === "warning"
                           ? "yellow"
                           : "green"
-                      }-100`}
+                      }-950 rounded-lg transition-all hover:bg-${
+                        alert.type === "urgent"
+                          ? "red"
+                          : alert.type === "warning"
+                          ? "yellow"
+                          : "green"
+                      }-100 dark:hover:bg-${
+                        alert.type === "urgent"
+                          ? "red"
+                          : alert.type === "warning"
+                          ? "yellow"
+                          : "green"
+                      }-900`}
                     >
                       <div className="flex items-start">
                         <alert.icon
@@ -561,7 +576,7 @@ export function Dashboard() {
                         />
                         <div>
                           <p className="text-sm font-medium">{alert.title}</p>
-                          <p className="text-xs text-gray-500">{alert.description}</p>
+                          <p className="text-xs text-muted-foreground">{alert.description}</p>
                         </div>
                       </div>
                     </div>
@@ -591,7 +606,7 @@ export function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center p-6">
-                <Truck className="h-32 w-32 mb-6 text-gray-400" />
+                <Truck className="h-32 w-32 mb-6 text-muted-foreground" />
                 <Button
                   asChild
                   className="bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-700 hover:to-emerald-600 transition-all"
@@ -620,10 +635,10 @@ export function Dashboard() {
                   <UserRoleBadge role="hse" />
                 </div>
                 <div className="pt-2 border-t">
-                  <p className="text-sm text-gray-500 text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     {isRTL ? "أنت مسجل الدخول كـ: " : "You are logged in as: "}
                     <span
-                      className="font-medium cursor-pointer text-blue-600 hover:underline"
+                      className="font-medium cursor-pointer text-primary hover:underline"
                       onClick={() => handleButtonClick("roleInfo")}
                     >
                       {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
@@ -647,7 +662,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-gray-100"
+                          className="w-full justify-start hover:bg-muted"
                           onClick={() => handleButtonClick("addEquipment")}
                         >
                           <Truck className="h-4 w-4 mr-2" />
@@ -666,7 +681,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-gray-100"
+                          className="w-full justify-start hover:bg-muted"
                           onClick={() => handleButtonClick("uploadDocument")}
                         >
                           <FileText className="h-4 w-4 mr-2" />
@@ -685,7 +700,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-gray-100"
+                          className="w-full justify-start hover:bg-muted"
                           onClick={() => handleButtonClick("scheduleInspection")}
                         >
                           <Calendar className="h-4 w-4 mr-2" />
@@ -704,7 +719,7 @@ export function Dashboard() {
                       <TooltipTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start hover:bg-gray-100"
+                          className="w-full justify-start hover:bg-muted"
                         >
                           <BarChart3 className="h-4 w-4 mr-2" />
                           {isRTL ? "عرض التحليلات" : "View Analytics"}
@@ -735,14 +750,14 @@ export function Dashboard() {
                   {recentActivities.map((activity) => (
                     <div
                       key={activity.id}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <div>
                         <p className="text-sm font-medium">{activity.action}</p>
-                        <p className="text-xs text-gray-500">{activity.details}</p>
-                        <p className="text-xs text-gray-500">by {activity.user}</p>
+                        <p className="text-xs text-muted-foreground">{activity.details}</p>
+                        <p className="text-xs text-muted-foreground">by {activity.user}</p>
                       </div>
-                      <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                      <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
                     </div>
                   ))}
                 </div>

@@ -14,7 +14,8 @@ import {
   BarChart3,
   Wrench,
   Bell,
-  X
+  X,
+  UserCheck
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
@@ -65,6 +66,7 @@ export function Sidebar({
   const dashboardModules: Module[] = [
     { name: t('dashboard'), icon: Home, path: '/', status: 'valid' },
     { name: t('equipment'), icon: Truck, path: '/equipment', status: 'warning', count: 12 },
+    { name: t('operators'), icon: UserCheck, path: '/operators', status: 'warning', count: 8 },
     { name: t('certifications'), icon: FileCheck, path: '/certifications', status: 'urgent', count: 5 },
     { name: t('maintenance'), icon: Wrench, path: '/maintenance', status: 'expired', count: 3 },
     { name: t('scheduling'), icon: Calendar, path: '/scheduling', status: 'valid' },

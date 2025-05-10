@@ -7,7 +7,6 @@ type LanguageContextType = {
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-
 // Simplified translations with only English and Arabic
 const translations: Record<string, Record<string, string>> = {
   en: {
@@ -30,6 +29,7 @@ const translations: Record<string, Record<string, string>> = {
     "upload_documents": "Upload Documents",
     "vendor_verification": "Vendor Verification",
     "help": "Help",
+    "operators": "Operators",
     // Login page translations
     "email_address": "Email Address",
     "password": "Password",
@@ -94,6 +94,7 @@ const translations: Record<string, Record<string, string>> = {
     "upload_documents": "تحميل المستندات",
     "vendor_verification": "التحقق من المورد",
     "help": "مساعدة",
+    "operators": "المشغلين",
     // Login page translations
     "email_address": "عنوان البريد الإلكتروني",
     "password": "كلمة المرور",
