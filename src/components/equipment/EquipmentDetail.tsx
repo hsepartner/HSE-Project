@@ -34,14 +34,27 @@ export function EquipmentDetail({ equipment, className }: EquipmentDetailProps) 
 
   return (
     <div className={cn("space-y-6", className)}>
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-        <div>
-          <h1 className="text-2xl font-bold">{equipment.name}</h1>
-          <p className="text-muted-foreground">{equipment.model} • {equipment.serialNumber}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <CategoryBadge category={equipment.category} />
-          <StatusBadge status={equipment.status} />
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div className="flex items-center gap-4 w-full">
+          {equipment.image ? (
+            <img
+              src={equipment.image}
+              alt={equipment.name}
+              className="w-16 h-16 object-contain rounded bg-white border p-1 shadow-sm flex-shrink-0"
+            />
+          ) : (
+            <div className="w-16 h-16 flex items-center justify-center rounded bg-muted border p-1 shadow-sm flex-shrink-0">
+              <CategoryBadge category={equipment.category} size="lg" showIcon={true} className="!px-0 !py-0" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold truncate">{equipment.name}</h1>
+            <p className="text-muted-foreground truncate">{equipment.model} • {equipment.serialNumber}</p>
+            <div className="flex gap-2 mt-2">
+              <CategoryBadge category={equipment.category} />
+              <StatusBadge status={equipment.status} />
+            </div>
+          </div>
         </div>
       </div>
 

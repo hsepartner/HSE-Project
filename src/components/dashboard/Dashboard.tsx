@@ -60,6 +60,9 @@ import {
 import { useLanguage } from "@/hooks/use-language";
 import { cn } from "@/lib/utils";
 import { EquipmentCategory, OperationalStatus } from "@/types/equipment";
+import AddEquipmentModal from "@/components/equipment/AddEquipmentModal";
+import { EquipmentStatusChart } from "@/components/analytics/EquipmentStatusChart"; // Import chart component
+import { ComplianceOverviewChart } from "@/components/analytics/ComplianceOverviewChart"; // Import chart component
 
 // Define interfaces
 interface EquipmentItem {
@@ -77,6 +80,7 @@ interface EquipmentType {
   name: string;
   image: string;
   category: EquipmentCategory;
+  id: string;
 }
 
 interface Alert {
@@ -100,42 +104,63 @@ interface Activity {
 const equipmentItems: EquipmentItem[] = [
   {
     id: 1,
-    name: "Excavator XL2000",
-    model: "CAT 320",
-    serialNumber: "CAT320-45678",
+    name: "Crawler Crane",
+    model: "Liebherr LR 1300",
+    serialNumber: "LR1300-0001",
     category: "heavy",
     status: "active",
     compliance: 92,
-    image: "/images/Excavator.png",
+    image: "/images/Crawler Crane.png",
   },
   {
     id: 2,
-    name: "Utility Truck",
-    model: "Ford F-450",
-    serialNumber: "FORD450-78901",
-    category: "light",
+    name: "Excavator",
+    model: "CAT 320",
+    serialNumber: "CAT320-45678",
+    category: "heavy",
     status: "maintenance",
     compliance: 65,
-    image: "/images/JCB.png",
+    image: "/images/Excavator.png",
   },
   {
     id: 3,
-    name: "Portable Generator",
-    model: "Honda EU7000",
-    serialNumber: "HONDAEU7-12345",
-    category: "power-tool",
+    name: "JCB",
+    model: "JCB 3CX",
+    serialNumber: "JCB3CX-78901",
+    category: "heavy",
     status: "active",
     compliance: 78,
+    image: "/images/JCB.png",
   },
   {
     id: 4,
-    name: "Concrete Mixer",
-    model: "PremierMix 500",
-    serialNumber: "PRMX500-56789",
+    name: "Hlab",
+    model: "HLAB X1",
+    serialNumber: "HLABX1-12345",
     category: "heavy",
     status: "decommissioned",
     compliance: 20,
-    image: "/images/WheelLoader.png",
+    image: "/images/hlab.png",
+  },
+  {
+    id: 5,
+    name: "Telehandler",
+    model: "JLG 4017RS",
+    serialNumber: "JLG4017-56789",
+    category: "heavy",
+    status: "active",
+    compliance: 85,
+    image: "/images/TELEHANDLER.png",
+  },
+  {
+    id: 6,
+    name: "Wheel Loader",
+    model: "CAT 950GC",
+    serialNumber: "CAT950GC-24680",
+    category: "heavy",
+    status: "maintenance",
+    compliance: 55,
+    image: "/images/Wheelloader.png",
   },
 ];
 
@@ -144,31 +169,37 @@ const equipmentTypes: EquipmentType[] = [
     name: "Crawler Crane",
     image: "/images/Crawler Crane.png",
     category: "heavy",
+    id: "1",
   },
   {
     name: "Excavator",
     image: "/images/Excavator.png",
     category: "heavy",
+    id: "2",
   },
   {
     name: "JCB",
     image: "/images/JCB.png",
     category: "heavy",
+    id: "3",
   },
   {
     name: "Hlab",
     image: "/images/hlab.png",
     category: "heavy",
+    id: "4",
   },
   {
     name: "Telehandler",
     image: "/images/TELEHANDLER.png",
     category: "heavy",
+    id: "5",
   },
   {
     name: "Wheel Loader",
     image: "/images/Wheelloader.png",
     category: "heavy",
+    id: "6",
   },
 ];
 
@@ -203,21 +234,21 @@ const recentActivities: Activity[] = [
   {
     id: 1,
     action: "Document Uploaded",
-    details: "Operation Certificate for Excavator XL2000",
+    details: "Operation Certificate for Crawler Crane",
     user: "John Smith",
     timestamp: "2024-04-26 09:00",
   },
   {
     id: 2,
     action: "Inspection Scheduled",
-    details: "Utility Truck scheduled for 2024-04-28",
+    details: "Excavator scheduled for 2024-04-28",
     user: "Maria Rodriguez",
     timestamp: "2024-04-25 14:15",
   },
   {
     id: 3,
     action: "Equipment Status Updated",
-    details: "Concrete Mixer marked as DECOMMISSIONED",
+    details: "Hlab marked as DECOMMISSIONED",
     user: "Ahmed Hassan",
     timestamp: "2024-04-24 11:00",
   },
@@ -267,7 +298,7 @@ export function Dashboard() {
     setOpenModal(modalType);
   };
 
-  const simulateAction = (action: string) => {
+  const simulateAction = async (action: string): Promise<void> => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -295,37 +326,74 @@ export function Dashboard() {
     >
       <WelcomeHeader />
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              <span>{isRTL ? "حالة المعدات" : "Equipment Status"}</span>
+            </CardTitle>
+            <CardDescription>
+              {isRTL
+                ? "نظرة عامة على حالة جميع المعدات"
+                : "Overview of all equipment status"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Replace this with actual status summary or chart */}
+            {/* <div className="text-center text-2xl font-bold">6 Active / 2 Maintenance / 1 Decommissioned</div> */}
+            <EquipmentStatusChart /> {/* Added Equipment Status Chart */}
+          </CardContent>
+        </Card>
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              <span>{isRTL ? "نظرة الامتثال" : "Compliance Overview"}</span>
+            </CardTitle>
+            <CardDescription>
+              {isRTL
+                ? "مستوى الامتثال الحالي للمعدات"
+                : "Current compliance level of equipment"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Replace this with actual compliance data or chart */}
+            {/* <div className="text-center text-2xl font-bold">Average Compliance: 78%</div> */}
+            <ComplianceOverviewChart /> {/* Added Compliance Overview Chart */}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Equipment Showcase */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 w-full">
         {equipmentTypes.slice(0, 5).map((type, index) => (
           <div
             key={type.name}
-            className="relative group cursor-pointer"
+            className="relative group cursor-pointer w-full max-w-full"
             onClick={() => handleButtonClick("addEquipment")}
             role="button"
             aria-label={`Add ${type.name} equipment`}
           >
-            <div className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all">
-              <div className="p-2">
-                <div className="aspect-square relative">
-                  <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
-                    {index + 1}
-                  </div>
-                  <img
-                    src={type.image}
-                    alt={type.name}
-                    className="absolute inset-0 w-full h-full object-contain p-4 transition-transform group-hover:scale-110"
-                  />
+            <div className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg hover:shadow-xl transition-all w-full max-w-full p-2 flex flex-col items-center">
+              <div className="relative w-full flex flex-col items-center">
+                <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs sm:text-sm font-medium">
+                  {index + 1}
                 </div>
-                <div className="p-2 text-center">
-                  <p className="text-sm font-medium truncate">{type.name}</p>
-                  <CategoryBadge category={type.category} size="sm" className="mt-1" />
-                </div>
+                <img
+                  src={type.image}
+                  alt={type.name}
+                  className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain p-2 transition-transform group-hover:scale-110 mx-auto"
+                />
               </div>
-              <div className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <div className="p-2 text-center w-full">
+                <p className="text-sm sm:text-base font-medium truncate w-full">{type.name}</p>
+                <CategoryBadge category={type.category} size="sm" className="mt-1" />
+              </div>
+              <div className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
                 <div className="text-center">
                   <PlusCircle className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm font-medium">
+                  <p className="text-xs sm:text-sm font-medium">
                     {isRTL ? "إضافة معدات جديدة" : "Add New Equipment"}
                   </p>
                 </div>
@@ -338,28 +406,28 @@ export function Dashboard() {
       {/* Status Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatusCard
-          title={isRTL ? "إجمالي المعدات" : "Total Equipment"}
+          title={isRTL ? "المصنع والمعدات" : "Plant & Equipment"}
           value={28}
           description={isRTL ? "+2 من الشهر الماضي" : "+2 from last month"}
           status="valid"
           icon={Truck}
         />
         <StatusCard
-          title={isRTL ? "نشط" : "Active"}
+          title={isRTL ? "أدوات الطاقة" : "Power Tools"}
           value={23}
           description={isRTL ? "82% من الإجمالي" : "82% of total"}
           status="valid"
           icon={ClipboardCheck}
         />
         <StatusCard
-          title={isRTL ? "في الصيانة" : "In Maintenance"}
+          title={isRTL ? "أدوات الرفع والملحقات" : "Lifting Tools and Tackles"}
           value={4}
           description={isRTL ? "+2 من الأسبوع الماضي" : "+2 from last week"}
           status="warning"
           icon={Settings}
         />
         <StatusCard
-          title={isRTL ? "يحتاج إلى الاهتمام" : "Needs Attention"}
+          title={isRTL ? "المشغلون" : "Operators"}
           value={7}
           description={isRTL ? "يتطلب المراجعة" : "Requires review"}
           status="urgent"
@@ -422,80 +490,89 @@ export function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="rounded-lg border overflow-hidden">
-                  <div className="bg-muted py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-4">{isRTL ? "المعدات" : "Equipment"}</div>
-                    <div className="col-span-2">{isRTL ? "الفئة" : "Category"}</div>
-                    <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
-                    <div className="col-span-2">{isRTL ? "الامتثال" : "Compliance"}</div>
-                    <div className="col-span-2">
-                      {isRTL ? "التفتيش التالي" : "Next Inspection"}
-                    </div>
-                  </div>
-                  <ScrollArea className="h-[300px]">
-                    {filteredEquipmentItems.length > 0 ? (
-                      filteredEquipmentItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-muted/50 cursor-pointer transition-colors"
-                          onClick={() => handleButtonClick("equipmentDetail", item.id)}
-                          role="button"
-                          aria-label={`View details for ${item.name}`}
-                        >
-                          <div className="col-span-4">
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {item.model} • {item.serialNumber}
-                            </div>
-                          </div>
-                          <div className="col-span-2">
-                            <CategoryBadge category={item.category} size="sm" />
-                          </div>
-                          <div className="col-span-2">
-                            <StatusBadge status={item.status} size="sm" />
-                          </div>
-                          <div className="col-span-2">
-                            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${
-                                  item.compliance > 80
-                                    ? "bg-green-500"
-                                    : item.compliance > 50
-                                    ? "bg-yellow-500"
-                                    : "bg-red-500"
-                                }`}
-                                style={{ width: `${item.compliance}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-xs mt-1">{item.compliance}%</div>
-                          </div>
-                          <div className="col-span-2 text-sm">
-                            <span
-                              className={`text-${
-                                item.compliance > 80
-                                  ? "green"
-                                  : item.compliance > 50
-                                  ? "yellow"
-                                  : "red"
-                              }-500 font-medium`}
-                            >
-                              {item.compliance > 80
-                                ? "120 days"
-                                : item.compliance > 50
-                                ? "14 days"
-                                : "5 days"}
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-8 text-center text-muted-foreground">
-                        {isRTL
-                          ? "لا توجد معدات تطابق معايير البحث"
-                          : "No equipment matches your search"}
+                <div className="overflow-x-auto w-full">
+                  <div className="rounded-lg border overflow-hidden min-w-[700px]">
+                    <div className="bg-muted py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-4">{isRTL ? "المعدات" : "Equipment"}</div>
+                      <div className="col-span-2">{isRTL ? "الفئة" : "Category"}</div>
+                      <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
+                      <div className="col-span-2">{isRTL ? "الامتثال" : "Compliance"}</div>
+                      <div className="col-span-2">
+                        {isRTL ? "التفتيش التالي" : "Next Inspection"}
                       </div>
-                    )}
-                  </ScrollArea>
+                    </div>
+                    <ScrollArea className="h-[300px] mb-2">
+                      {filteredEquipmentItems.length > 0 ? (
+                        filteredEquipmentItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-muted/50 cursor-pointer transition-colors"
+                            onClick={() => handleButtonClick("equipmentDetail", item.id)}
+                            role="button"
+                            aria-label={`View details for ${item.name}`}
+                          >
+                            <div className="col-span-4 flex items-center gap-3">
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-10 h-10 object-contain rounded bg-white border p-1"
+                              />
+                              <div>
+                                <div className="font-medium">{item.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.model} • {item.serialNumber}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-span-2">
+                              <CategoryBadge category={item.category} size="sm" />
+                            </div>
+                            <div className="col-span-2">
+                              <StatusBadge status={item.status} size="sm" />
+                            </div>
+                            <div className="col-span-2">
+                              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full ${
+                                    item.compliance > 80
+                                      ? "bg-green-500"
+                                      : item.compliance > 50
+                                      ? "bg-yellow-500"
+                                      : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${item.compliance}%` }}
+                                ></div>
+                              </div>
+                              <div className="text-xs mt-1">{item.compliance}%</div>
+                            </div>
+                            <div className="col-span-2 text-sm">
+                              <span
+                                className={`text-${
+                                  item.compliance > 80
+                                    ? "green"
+                                    : item.compliance > 50
+                                    ? "yellow"
+                                    : "red"
+                                }-500 font-medium`}
+                              >
+                                {item.compliance > 80
+                                  ? "120 days"
+                                  : item.compliance > 50
+                                  ? "14 days"
+                                  : "5 days"}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-8 text-center text-muted-foreground">
+                          {isRTL
+                            ? "لا توجد معدات تطابق معايير البحث"
+                            : "No equipment matches your search"}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -820,72 +897,74 @@ export function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border overflow-hidden">
-                <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-4">{isRTL ? "الوثيقة" : "Document"}</div>
-                  <div className="col-span-3">{isRTL ? "المعدات" : "Equipment"}</div>
-                  <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
-                  <div className="col-span-3">
-                    {isRTL ? "تاريخ الانتهاء" : "Expiry Date"}
+              <div className="overflow-x-auto w-full">
+                <div className="rounded-lg border overflow-hidden min-w-[700px]">
+                  <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-4">{isRTL ? "الوثيقة" : "Document"}</div>
+                    <div className="col-span-3">{isRTL ? "المعدات" : "Equipment"}</div>
+                    <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
+                    <div className="col-span-3">
+                      {isRTL ? "تاريخ الانتهاء" : "Expiry Date"}
+                    </div>
                   </div>
-                </div>
-                <ScrollArea className="h-[300px]">
-                  {[
-                    {
-                      name: "Operation Certificate",
-                      equipment: "Excavator XL2000",
-                      status: "Valid",
-                      expiry: "2025-08-15",
-                      statusClass: "bg-green-500 text-white",
-                    },
-                    {
-                      name: "Registration",
-                      equipment: "Utility Truck",
-                      status: "Expiring Soon",
-                      expiry: "2024-07-15",
-                      statusClass: "bg-yellow-500 text-white",
-                    },
-                    {
-                      name: "Electrical Safety Inspection",
-                      equipment: "Portable Generator",
-                      status: "Critical",
-                      expiry: "2024-05-05",
-                      statusClass: "bg-red-500 text-white",
-                    },
-                    {
-                      name: "Decommission Report",
-                      equipment: "Concrete Mixer",
-                      status: "Expired",
-                      expiry: "2024-03-01",
-                      statusClass: "bg-gray-500 text-white",
-                    },
-                  ]
-                    .filter(
-                      (doc) =>
-                        doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        doc.equipment.toLowerCase().includes(searchTerm.toLowerCase())
-                    )
-                    .map((doc, index) => (
-                      <div
-                        key={index}
-                        className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => handleButtonClick("documentDetail")}
-                        role="button"
-                        aria-label={`View details for ${doc.name}`}
-                      >
-                        <div className="col-span-4 font-medium">{doc.name}</div>
-                        <div className="col-span-3 text-sm">{doc.equipment}</div>
-                        <div className="col-span-2">
-                          <div
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${doc.statusClass}`}
-                          >
-                            {doc.status}
+                  <ScrollArea className="h-[300px] mb-2">
+                    {[
+                      {
+                        name: "Operation Certificate",
+                        equipment: "Crawler Crane",
+                        status: "Valid",
+                        expiry: "2025-08-15",
+                        statusClass: "bg-green-500 text-white",
+                      },
+                      {
+                        name: "Registration",
+                        equipment: "Excavator",
+                        status: "Expiring Soon",
+                        expiry: "2024-07-15",
+                        statusClass: "bg-yellow-500 text-white",
+                      },
+                      {
+                        name: "Electrical Safety Inspection",
+                        equipment: "JCB",
+                        status: "Critical",
+                        expiry: "2024-05-05",
+                        statusClass: "bg-red-500 text-white",
+                      },
+                      {
+                        name: "Decommission Report",
+                        equipment: "Hlab",
+                        status: "Expired",
+                        expiry: "2024-03-01",
+                        statusClass: "bg-gray-500 text-white",
+                      },
+                    ]
+                      .filter(
+                        (doc) =>
+                          doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          doc.equipment.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((doc, index) => (
+                        <div
+                          key={index}
+                          className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => handleButtonClick("documentDetail")}
+                          role="button"
+                          aria-label={`View details for ${doc.name}`}
+                        >
+                          <div className="col-span-4 font-medium">{doc.name}</div>
+                          <div className="col-span-3 text-sm">{doc.equipment}</div>
+                          <div className="col-span-2">
+                            <div
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${doc.statusClass}`}
+                            >
+                              {doc.status}
+                            </div>
                           </div>
+                          <div className="col-span-3 text-sm">{doc.expiry}</div>
                         </div>
-                        <div className="col-span-3 text-sm">{doc.expiry}</div>
-                      </div>
-                    ))}
-                </ScrollArea>
+                      ))}
+                  </ScrollArea>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -914,67 +993,69 @@ export function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border overflow-hidden">
-                <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-4">{isRTL ? "المعدات" : "Equipment"}</div>
-                  <div className="col-span-3">{isRTL ? "النوع" : "Type"}</div>
-                  <div className="col-span-3">{isRTL ? "التاريخ" : "Date"}</div>
-                  <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
-                </div>
-                <ScrollArea className="h-[300px]">
-                  {[
-                    {
-                      equipment: "Excavator XL2000",
-                      type: "Routine Service",
-                      date: "2024-05-15",
-                      status: "Scheduled",
-                      statusClass: "bg-yellow-500 text-white",
-                    },
-                    {
-                      equipment: "Utility Truck",
-                      type: "Repair",
-                      date: "2024-04-28",
-                      status: "In Progress",
-                      statusClass: "bg-red-500 text-white",
-                    },
-                    {
-                      equipment: "Portable Generator",
-                      type: "Calibration",
-                      date: "2024-05-05",
-                      status: "Scheduled",
-                      statusClass: "bg-yellow-500 text-white",
-                    },
-                    {
-                      equipment: "Wheel Loader",
-                      type: "Overhaul",
-                      date: "2024-04-15",
-                      status: "Completed",
-                      statusClass: "bg-green-500 text-white",
-                    },
-                  ]
-                    .filter(
-                      (item) =>
-                        item.equipment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.type.toLowerCase().includes(searchTerm.toLowerCase())
-                    )
-                    .map((item, index) => (
-                      <div
-                        key={index}
-                        className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="col-span-4 font-medium">{item.equipment}</div>
-                        <div className="col-span-3 text-sm">{item.type}</div>
-                        <div className="col-span-3 text-sm">{item.date}</div>
-                        <div className="col-span-2">
-                          <div
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${item.statusClass}`}
-                          >
-                            {item.status}
+              <div className="overflow-x-auto w-full">
+                <div className="rounded-lg border overflow-hidden min-w-[700px]">
+                  <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-4">{isRTL ? "المعدات" : "Equipment"}</div>
+                    <div className="col-span-3">{isRTL ? "النوع" : "Type"}</div>
+                    <div className="col-span-3">{isRTL ? "التاريخ" : "Date"}</div>
+                    <div className="col-span-2">{isRTL ? "الحالة" : "Status"}</div>
+                  </div>
+                  <ScrollArea className="h-[300px] mb-2">
+                    {[
+                      {
+                        equipment: "Crawler Crane",
+                        type: "Routine Service",
+                        date: "2024-05-15",
+                        status: "Scheduled",
+                        statusClass: "bg-yellow-500 text-white",
+                      },
+                      {
+                        equipment: "Excavator",
+                        type: "Repair",
+                        date: "2024-04-28",
+                        status: "In Progress",
+                        statusClass: "bg-red-500 text-white",
+                      },
+                      {
+                        equipment: "JCB",
+                        type: "Calibration",
+                        date: "2024-05-05",
+                        status: "Scheduled",
+                        statusClass: "bg-yellow-500 text-white",
+                      },
+                      {
+                        equipment: "Wheel Loader",
+                        type: "Overhaul",
+                        date: "2024-04-15",
+                        status: "Completed",
+                        statusClass: "bg-green-500 text-white",
+                      },
+                    ]
+                      .filter(
+                        (item) =>
+                          item.equipment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.type.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((item, index) => (
+                        <div
+                          key={index}
+                          className="py-3 px-4 grid grid-cols-12 gap-2 items-center hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="col-span-4 font-medium">{item.equipment}</div>
+                          <div className="col-span-3 text-sm">{item.type}</div>
+                          <div className="col-span-3 text-sm">{item.date}</div>
+                          <div className="col-span-2">
+                            <div
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${item.statusClass}`}
+                            >
+                              {item.status}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                </ScrollArea>
+                      ))}
+                  </ScrollArea>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1002,21 +1083,18 @@ export function Dashboard() {
 
           {selectedEquipment && (
             <div className="space-y-6">
+              <div className="flex items-center gap-6 mb-4">
+                <img
+                  src={selectedEquipment.image}
+                  alt={selectedEquipment.name}
+                  className="w-20 h-20 object-contain rounded bg-white border p-2"
+                />
+                <div>
+                  <h2 className="text-xl font-bold">{selectedEquipment.name}</h2>
+                  <div className="text-sm text-muted-foreground">{selectedEquipment.model} • {selectedEquipment.serialNumber}</div>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>{isRTL ? "اسم المعدات" : "Equipment Name"}</Label>
-                  <p className="mt-1 text-sm font-medium">{selectedEquipment.name}</p>
-                </div>
-                <div>
-                  <Label>{isRTL ? "الطراز" : "Model"}</Label>
-                  <p className="mt-1 text-sm font-medium">{selectedEquipment.model}</p>
-                </div>
-                <div>
-                  <Label>{isRTL ? "الرقم التسلسلي" : "Serial Number"}</Label>
-                  <p className="mt-1 text-sm font-medium">
-                    {selectedEquipment.serialNumber}
-                  </p>
-                </div>
                 <div>
                   <Label>{isRTL ? "الفئة" : "Category"}</Label>
                   <div className="mt-1">
@@ -1109,187 +1187,17 @@ export function Dashboard() {
       </Dialog>
 
       {/* Add New Equipment Modal */}
-      <Dialog open={openModal === "addEquipment"} onOpenChange={() => setOpenModal("")}>
-        <DialogContent className="sm:max-w-[90vw] md:max-w-[800px] lg:max-w-[1000px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{isRTL ? "إضافة معدات جديدة" : "Add New Equipment"}</DialogTitle>
-            <DialogDescription>
-              {isRTL
-                ? "اختر نوع المعدات وأدخل التفاصيل لتسجيل معدات جديدة"
-                : "Select equipment type and enter details to register new equipment"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-2">
-            <div className="space-y-2">
-              <Label>{isRTL ? "نوع المعدات" : "Equipment Type"}</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {equipmentTypes.map((type) => (
-                  <div
-                    key={type.name}
-                    className={`flex flex-col items-center p-2 border rounded-lg cursor-pointer transition-colors ${
-                      selectedEquipmentType === type.name
-                        ? "border-blue-500 bg-blue-50"
-                        : "hover:border-blue-300 hover:bg-gray-50"
-                    }`}
-                    onClick={() => setSelectedEquipmentType(type.name)}
-                    role="button"
-                    aria-label={`Select ${type.name}`}
-                  >
-                    <img
-                      src={type.image}
-                      alt={type.name}
-                      className="w-24 h-24 object-contain mb-2"
-                    />
-                    <span className="text-sm font-medium text-center">
-                      {type.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{isRTL ? "اسم المعدات" : "Equipment Name"}</Label>
-                <Input
-                  id="name"
-                  placeholder={isRTL ? "مثال: Excavator XL3000" : "e.g. Excavator XL3000"}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="model">{isRTL ? "الطراز" : "Model"}</Label>
-                <Input id="model" placeholder={isRTL ? "مثال: CAT 320" : "e.g. CAT 320"} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="serial">{isRTL ? "الرقم التسلسلي" : "Serial Number"}</Label>
-                <Input
-                  id="serial"
-                  placeholder={isRTL ? "مثال: CAT320-45678" : "e.g. CAT320-45678"}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">{isRTL ? "الفئة" : "Category"}</Label>
-                <Select
-                  defaultValue={
-                    equipmentTypes.find((type) => type.name === selectedEquipmentType)?.category
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={isRTL ? "اختر الفئة" : "Select category"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="heavy">
-                      {isRTL ? "معدات ثقيلة" : "Heavy Equipment"}
-                    </SelectItem>
-                    <SelectItem value="light">
-                      {isRTL ? "مركبة خفيفة" : "Light Vehicle"}
-                    </SelectItem>
-                    <SelectItem value="power-tool">
-                      {isRTL ? "أداة كهربائية" : "Power Tool"}
-                    </SelectItem>
-                    <SelectItem value="safety">
-                      {isRTL ? "معدات السلامة" : "Safety Equipment"}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">{isRTL ? "الوصف" : "Description"}</Label>
-              <Textarea
-                id="description"
-                placeholder={
-                  isRTL ? "وصف موجز للمعدات..." : "Brief description of the equipment..."
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{isRTL ? "الحالة الأولية" : "Initial Status"}</Label>
-              <div className="flex flex-wrap gap-4 mt-1">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="active"
-                    name="status"
-                    className="form-radio"
-                  />
-                  <Label htmlFor="active" className="cursor-pointer">
-                    {isRTL ? "نشط" : "Active"}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="maintenance"
-                    name="status"
-                    className="form-radio"
-                  />
-                  <Label htmlFor="maintenance" className="cursor-pointer">
-                    {isRTL ? "في الصيانة" : "In Maintenance"}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="stored"
-                    name="status"
-                    className="form-radio"
-                  />
-                  <Label htmlFor="stored" className="cursor-pointer">
-                    {isRTL ? "مخزن" : "Stored"}
-                  </Label>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{isRTL ? "الوثائق الأولية" : "Initial Documents"}</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
-                <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                <p className="mt-2 text-sm text-gray-500">
-                  {isRTL
-                    ? "اسحب وأسقط الملفات هنا أو انقر للتصفح"
-                    : "Drag & drop files here or click to browse"}
-                </p>
-                <Button variant="outline" size="sm" className="mt-4">
-                  {isRTL ? "اختر الملفات" : "Select Files"}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenModal("")}>
-              {isRTL ? "إلغاء" : "Cancel"}
-            </Button>
-            <Button
-              onClick={() =>
-                simulateAction(isRTL ? "تسجيل المعدات" : "Equipment registration")
-              }
-              disabled={loading}
-              className="bg-green-500 hover:bg-green-600"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isRTL ? "جارٍ المعالجة..." : "Processing..."}
-                </>
-              ) : (
-                <>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  {isRTL ? "تسجيل المعدات" : "Register Equipment"}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddEquipmentModal
+        open={openModal === "addEquipment"}
+        onOpenChange={(open) => setOpenModal(open ? "addEquipment" : "")}
+        equipmentTypes={equipmentTypes}
+        selectedEquipmentType={selectedEquipmentType}
+        setSelectedEquipmentType={setSelectedEquipmentType}
+        loading={loading}
+        onSubmit={() => simulateAction(isRTL ? "تسجيل المعدات" : "Equipment registration")}
+        isRTL={isRTL}
+        onCancel={() => setOpenModal("")}
+      />
 
       {/* Upload Document Modal */}
       <Dialog
@@ -1694,7 +1602,7 @@ export function Dashboard() {
               </Button>
             </div>
 
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg overflow-hidden overflow-x-auto min-w-[700px]">
               <div className="bg-gray-100 py-2 px-4 text-sm font-medium grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3">{isRTL ? "اسم المعدات" : "Equipment Name"}</div>
                 <div className="col-span-2">{isRTL ? "الطراز/التسلسلي" : "Model/Serial"}</div>
@@ -1703,7 +1611,7 @@ export function Dashboard() {
                 <div className="col-span-1">{isRTL ? "الامتثال" : "Compliance"}</div>
                 <div className="col-span-2">{isRTL ? "الإجراءات" : "Actions"}</div>
               </div>
-              <ScrollArea className="h-[300px]">
+              <ScrollArea className="h-[300px] mb-2">
                 {filteredEquipmentItems.map((item) => (
                   <div
                     key={item.id}
@@ -1835,7 +1743,7 @@ export function Dashboard() {
                     {isRTL ? "المعدات المرتبطة" : "Associated Equipment"}
                   </Label>
                   <p className="font-medium mt-1">
-                    {isRTL ? "Excavator XL2000 (CAT 320)" : "Excavator XL2000 (CAT 320)"}
+                    {isRTL ? "Crawler Crane (Liebherr LR 1300)" : "Crawler Crane (Liebherr LR 1300)"}
                   </p>
                 </div>
                 <div>

@@ -29,14 +29,15 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, PlusCircle } from "lucide-react";
+import AddEquipmentModal from "@/components/equipment/AddEquipmentModal";
 
 // Sample data (unchanged)
 const SAMPLE_EQUIPMENT: Equipment[] = [
   {
     id: "1",
-    name: "Excavator XL2000",
-    model: "CAT 320",
-    serialNumber: "CAT320-45678",
+    name: "Crawler Crane",
+    model: "Liebherr LR 1300",
+    serialNumber: "LR1300-0001",
     category: "heavy",
     status: "active",
     complianceScore: 92,
@@ -44,6 +45,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     purchaseDate: "2020-05-10",
     location: "Site A - North",
     assignedTo: "John Operator",
+    image: "/images/Crawler Crane.png",
     documents: [
       {
         id: "d1",
@@ -76,15 +78,17 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
   },
   {
     id: "2",
-    name: "Utility Truck",
-    model: "Ford F-450",
-    serialNumber: "FORD450-78901",
-    category: "light",
+    name: "Excavator",
+    model: "CAT 320",
+    serialNumber: "CAT320-45678",
+    category: "heavy",
     status: "maintenance",
     complianceScore: 65,
     nextInspectionDate: "2025-06-20",
     purchaseDate: "2021-07-15",
     location: "Site B - East",
+    assignedTo: "Maria Operator",
+    image: "/images/Excavator.png",
     documents: [
       {
         id: "d4",
@@ -109,15 +113,17 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
   },
   {
     id: "3",
-    name: "Portable Generator",
-    model: "Honda EU7000",
-    serialNumber: "HONDAEU7-12345",
-    category: "power-tool",
+    name: "JCB",
+    model: "JCB 3CX",
+    serialNumber: "JCB3CX-78901",
+    category: "heavy",
     status: "active",
     complianceScore: 78,
     nextInspectionDate: "2024-05-05",
     purchaseDate: "2022-01-20",
     location: "Site C - Workshop",
+    assignedTo: "Ahmed Operator",
+    image: "/images/JCB.png",
     documents: [
       {
         id: "d6",
@@ -141,15 +147,17 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
   },
   {
     id: "4",
-    name: "Concrete Mixer",
-    model: "PremierMix 500",
-    serialNumber: "PRMX500-56789",
+    name: "Hlab",
+    model: "HLAB X1",
+    serialNumber: "HLABX1-12345",
     category: "heavy",
     status: "decommissioned",
     complianceScore: 20,
     nextInspectionDate: "2024-03-01",
     purchaseDate: "2018-11-05",
     location: "Warehouse",
+    assignedTo: "Sarah Operator",
+    image: "/images/hlab.png",
     documents: [
       {
         id: "d8",
@@ -164,15 +172,17 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
   },
   {
     id: "5",
-    name: "Circular Saw",
-    model: "DeWalt DCS577",
-    serialNumber: "DW577-34567",
-    category: "power-tool",
+    name: "Telehandler",
+    model: "JLG 4017RS",
+    serialNumber: "JLG4017-56789",
+    category: "heavy",
     status: "active",
     complianceScore: 85,
     nextInspectionDate: "2024-08-10",
     purchaseDate: "2023-02-15",
     location: "Site A - Workshop",
+    assignedTo: "James Operator",
+    image: "/images/TELEHANDLER.png",
     documents: [
       {
         id: "d9",
@@ -194,6 +204,40 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
       },
     ],
     parentEquipmentId: "3",
+  },
+  {
+    id: "6",
+    name: "Wheel Loader",
+    model: "CAT 950GC",
+    serialNumber: "CAT950GC-24680",
+    category: "heavy",
+    status: "maintenance",
+    complianceScore: 55,
+    nextInspectionDate: "2024-09-01",
+    purchaseDate: "2021-03-10",
+    location: "Site D - South",
+    assignedTo: "Emily Operator",
+    image: "/images/Wheelloader.png",
+    documents: [
+      {
+        id: "d11",
+        name: "Registration",
+        type: "certificate",
+        status: "verified",
+        issueDate: "2023-07-15",
+        expiryDate: "2024-07-15",
+        issuedBy: "DMV",
+      },
+      {
+        id: "d12",
+        name: "Maintenance Schedule",
+        type: "manual",
+        status: "pending",
+        issueDate: "2021-07-15",
+        expiryDate: "2031-07-15",
+        issuedBy: "Ford",
+      },
+    ],
   },
 ];
 
@@ -400,211 +444,17 @@ const EquipmentRegistry = () => {
         </div>
 
         {/* Add Equipment Modal (Updated to match Dashboard.tsx) */}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[600px] md:max-w-[800px] lg:max-w-[1000px] w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {isRTL ? "إضافة معدات جديدة" : "Add New Equipment"}
-              </DialogTitle>
-              <DialogDescription>
-                {isRTL
-                  ? "اختر نوع المعدات وأدخل التفاصيل لتسجيل معدات جديدة"
-                  : "Select equipment type and enter details to register new equipment"}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4 py-2">
-              {/* Equipment Type Selection with Images */}
-              <div className="space-y-2">
-                <Label>{isRTL ? "نوع المعدات" : "Equipment Type"}</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {equipmentTypes.map((type) => (
-                    <div
-                      key={type.name}
-                      className={`flex flex-col items-center p-2 border rounded-lg cursor-pointer transition-colors ${
-                        selectedEquipmentType === type.name
-                          ? "border-primary bg-primary/10"
-                          : "hover:border-primary/50 hover:bg-muted"
-                      }`}
-                      onClick={() => setSelectedEquipmentType(type.name)}
-                    >
-                      <img
-                        src={type.image}
-                        alt={type.name}
-                        className="w-24 h-24 object-contain mb-2"
-                      />
-                      <span className="text-sm font-medium text-center">
-                        {type.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">
-                    {isRTL ? "اسم المعدات" : "Equipment Name"}
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder={
-                      isRTL ? "مثال: Excavator XL3000" : "e.g. Excavator XL3000"
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="model">{isRTL ? "الطراز" : "Model"}</Label>
-                  <Input
-                    id="model"
-                    placeholder={isRTL ? "مثال: CAT 320" : "e.g. CAT 320"}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="serial">
-                    {isRTL ? "الرقم التسلسلي" : "Serial Number"}
-                  </Label>
-                  <Input
-                    id="serial"
-                    placeholder={
-                      isRTL ? "مثال: CAT320-45678" : "e.g. CAT320-45678"
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">{isRTL ? "الفئة" : "Category"}</Label>
-                  <Select
-                    defaultValue={
-                      equipmentTypes.find(
-                        (type) => type.name === selectedEquipmentType
-                      )?.category
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isRTL ? "اختر الفئة" : "Select category"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="heavy">
-                        {isRTL ? "معدات ثقيلة" : "Heavy Equipment"}
-                      </SelectItem>
-                      <SelectItem value="light">
-                        {isRTL ? "مركبة خفيفة" : "Light Vehicle"}
-                      </SelectItem>
-                      <SelectItem value="power-tool">
-                        {isRTL ? "أداة كهربائية" : "Power Tool"}
-                      </SelectItem>
-                      <SelectItem value="safety">
-                        {isRTL ? "معدات السلامة" : "Safety Equipment"}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">
-                  {isRTL ? "الوصف" : "Description"}
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder={
-                    isRTL
-                      ? "وصف موجز للمعدات..."
-                      : "Brief description of the equipment..."
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{isRTL ? "الحالة الأولية" : "Initial Status"}</Label>
-                <div className="flex space-x-4 mt-1">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="active"
-                      name="status"
-                      className="form-radio"
-                    />
-                    <Label htmlFor="active" className="cursor-pointer">
-                      {isRTL ? "نشط" : "Active"}
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="maintenance"
-                      name="status"
-                      className="form-radio"
-                    />
-                    <Label htmlFor="maintenance" className="cursor-pointer">
-                      {isRTL ? "في الصيانة" : "In Maintenance"}
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="stored"
-                      name="status"
-                      className="form-radio"
-                    />
-                    <Label htmlFor="stored" className="cursor-pointer">
-                      {isRTL ? "مخزن" : "Stored"}
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{isRTL ? "الوثائق الأولية" : "Initial Documents"}</Label>
-                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {isRTL
-                      ? "اسحب وأسقط الملفات هنا أو انقر للتصفح"
-                      : "Drag & drop files here or click to browse"}
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-4">
-                    {isRTL ? "اختر الملفات" : "Select Files"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-                {isRTL ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button
-                onClick={() =>
-                  simulateAction(
-                    isRTL ? "تسجيل المعدات" : "Equipment registration"
-                  )
-                }
-                disabled={loading}
-                className="bg-status-valid hover:bg-status-valid/90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isRTL ? "جارٍ المعالجة..." : "Processing..."}
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    {isRTL ? "تسجيل المعدات" : "Register Equipment"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <AddEquipmentModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          equipmentTypes={equipmentTypes}
+          selectedEquipmentType={selectedEquipmentType}
+          setSelectedEquipmentType={setSelectedEquipmentType}
+          loading={loading}
+          onSubmit={() => simulateAction(isRTL ? "تسجيل المعدات" : "Equipment registration")}
+          isRTL={isRTL}
+          onCancel={() => setIsModalOpen(false)}
+        />
       </div>
     </DashboardLayout>
   );

@@ -120,8 +120,8 @@ export function EquipmentHierarchy({ equipment, className }: EquipmentHierarchyP
             {isRTL ? "عرض منظم للمعدات حسب العلاقات الأبوية" : "Organized view of equipment by parent-child relationships"}
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-2">
-          <div className="tree">
+        <CardContent className="p-2 overflow-x-auto">
+          <div className="tree flex flex-col gap-2 min-w-[320px]">
             {hierarchy.length > 0 ? (
               hierarchy.map(node => renderNode(node))
             ) : (
@@ -145,7 +145,7 @@ export function EquipmentHierarchy({ equipment, className }: EquipmentHierarchyP
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="border rounded-lg bg-background p-4">
               <h4 className="font-medium text-sm mb-3 flex items-center">
                 <Wrench size={16} className="mr-2 text-blue-600" />

@@ -1,4 +1,3 @@
-
 import { Equipment, getDaysUntilNextInspection } from "@/types/equipment";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -19,10 +18,23 @@ export function EquipmentCard({ equipment, className }: EquipmentCardProps) {
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="p-4 pb-0">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <h3 className="font-semibold text-lg leading-none">{equipment.name}</h3>
-            <p className="text-sm text-muted-foreground">{equipment.model} • {equipment.serialNumber}</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex items-center gap-3 w-full">
+            {equipment.image ? (
+              <img
+                src={equipment.image}
+                alt={equipment.name}
+                className="w-12 h-12 object-contain rounded bg-white border p-1 shadow-sm flex-shrink-0"
+              />
+            ) : (
+              <div className="w-12 h-12 flex items-center justify-center rounded bg-muted border p-1 shadow-sm flex-shrink-0">
+                <CategoryBadge category={equipment.category} size="md" showIcon={true} className="!px-0 !py-0" />
+              </div>
+            )}
+            <div className="space-y-1 min-w-0">
+              <h3 className="font-semibold text-lg leading-none truncate">{equipment.name}</h3>
+              <p className="text-sm text-muted-foreground truncate">{equipment.model} • {equipment.serialNumber}</p>
+            </div>
           </div>
           <StatusBadge status={equipment.status} size="sm" />
         </div>

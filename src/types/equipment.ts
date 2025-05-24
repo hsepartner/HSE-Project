@@ -1,4 +1,3 @@
-
 export type EquipmentCategory = 'heavy' | 'light' | 'power-tool';
 export type OperationalStatus = 'active' | 'maintenance' | 'decommissioned';
 export type DocumentStatus = 'verified' | 'pending' | 'rejected';
@@ -19,6 +18,7 @@ export interface Equipment {
   assignedTo?: string;
   location?: string;
   parentEquipmentId?: string;
+  image?: string;
 }
 
 export interface Document {
