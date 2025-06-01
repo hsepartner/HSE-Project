@@ -66,6 +66,8 @@ export function Sidebar({
   const dashboardModules: Module[] = [
     { name: t('dashboard'), icon: Home, path: '/', status: 'valid' },
     { name: t('equipment'), icon: Truck, path: '/equipment', status: 'warning', count: 12 },
+    { name: t('Power Tools'), icon: Wrench, path: '/power-tools', status: 'warning', count: 7 },
+    { name: t('Lifting Tools'), icon: Settings, path: '/lifting-tools', status: 'urgent', count: 4 },
     { name: t('operators'), icon: UserCheck, path: '/operators', status: 'warning', count: 8 },
     { name: t('certifications'), icon: FileCheck, path: '/certifications', status: 'urgent', count: 5 },
     { name: t('maintenance'), icon: Wrench, path: '/maintenance', status: 'expired', count: 3 },

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Equipment, getDaysUntilNextInspection } from "@/types/equipment";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,17 +8,33 @@ import { StatusBadge } from "./StatusBadge";
 import { ComplianceMeter } from "./ComplianceMeter";
 import { DocumentList } from "./DocumentList";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { Calendar, Clipboard, History, MapPin, User, Tag } from "lucide-react";
+import { Calendar, Clipboard, History, MapPin, User, Tag, Edit, Save, X, Upload, FileText, Eye, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DocumentType, DocumentStatus } from "@/types/equipment";
 
 interface EquipmentDetailProps {
   equipment: Equipment;
   className?: string;
+  onBack?: () => void;
 }
 
-export function EquipmentDetail({ equipment, className }: EquipmentDetailProps) {
+export function EquipmentDetail({ equipment, className, onBack }: EquipmentDetailProps) {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === 'ar';
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedEquipment, setEditedEquipment] = useState(equipment);
+  const [newNote, setNewNote] = useState("");
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const daysToInspection = getDaysUntilNextInspection(equipment.nextInspectionDate);
 
   const documentStatuses = {
@@ -32,32 +49,110 @@ export function EquipmentDetail({ equipment, className }: EquipmentDetailProps) 
     { name: isRTL ? "مرفوض" : "Rejected", value: documentStatuses.rejected, color: 'var(--status-expired)' },
   ].filter(entry => entry.value > 0);
 
+  // --- Inject sample document if not present ---
+  const sampleDocument = {
+    id: "sample-vendor-pdf",
+    name: "Vendor List Version 2.pdf",
+    type: "manual" as DocumentType,
+    status: "verified" as DocumentStatus,
+    issueDate: "2024-01-01",
+    expiryDate: "2025-01-01",
+    issuedBy: "Vendor Department",
+    fileUrl: "/lovable-uploads/Vendor List Version 2.pdf",
+  };
+  const documentsWithSample = equipment.documents.some(doc => doc.id === sampleDocument.id)
+    ? equipment.documents
+    : [sampleDocument, ...equipment.documents];
+  // --- Mock history and maintenance data ---
+  const mockHistory = [
+    { date: "2024-03-01", event: "Inspection completed", by: "Inspector A" },
+    { date: "2024-02-15", event: "Assigned to John Doe", by: "System" },
+    { date: "2024-01-10", event: "Status changed to Active", by: "Admin" },
+  ];
+  const mockMaintenance = [
+    { date: "2024-04-10", action: "Oil Change", by: "Tech B", status: "Completed" },
+    { date: "2024-03-20", action: "Filter Replacement", by: "Tech C", status: "Completed" },
+    { date: "2024-02-05", action: "Scheduled Maintenance", by: "Tech D", status: "Scheduled" },
+  ];
+
+  const handleSave = () => {
+    // Implement save logic here
+    setIsEditing(false);
+    // You would typically call an API to update the equipment
+  };
+
+  const handleAddNote = () => {
+    if (newNote.trim()) {
+      // Add note logic here
+      setNewNote("");
+    }
+  };
+
+  const handleDocumentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle document upload
+    const file = event.target.files?.[0];
+    // Implement upload logic
+  };
+
   return (
     <div className={cn("space-y-6", className)}>
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex items-center gap-4 w-full">
-          {equipment.image ? (
-            <img
-              src={equipment.image}
-              alt={equipment.name}
-              className="w-16 h-16 object-contain rounded bg-white border p-1 shadow-sm flex-shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 flex items-center justify-center rounded bg-muted border p-1 shadow-sm flex-shrink-0">
-              <CategoryBadge category={equipment.category} size="lg" showIcon={true} className="!px-0 !py-0" />
-            </div>
+      {/* Header with Back Button and Edit Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {onBack && (
+            <Button variant="outline" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {isRTL ? "رجوع" : "Back"}
+            </Button>
           )}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold truncate">{equipment.name}</h1>
-            <p className="text-muted-foreground truncate">{equipment.model} • {equipment.serialNumber}</p>
-            <div className="flex gap-2 mt-2">
-              <CategoryBadge category={equipment.category} />
-              <StatusBadge status={equipment.status} />
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold">{equipment.name}</h1>
+            <p className="text-muted-foreground">{equipment.model} • {equipment.serialNumber}</p>
           </div>
         </div>
+        <div className="flex gap-2">
+          {isEditing ? (
+            <>
+              <Button size="sm" onClick={handleSave}>
+                <Save className="h-4 w-4 mr-2" />
+                {isRTL ? "حفظ" : "Save"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                <X className="h-4 w-4 mr-2" />
+                {isRTL ? "إلغاء" : "Cancel"}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Edit className="h-4 w-4 mr-2" />
+              {isRTL ? "تعديل" : "Edit"}
+            </Button>
+          )}
+        </div>
       </div>
-
+      {/* Notes Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{isRTL ? "ملاحظات الفحص" : "Inspection Notes"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Textarea
+                placeholder={isRTL ? "أضف ملاحظة..." : "Add a note..."}
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleAddNote}>
+                {isRTL ? "إضافة" : "Add"}
+              </Button>
+            </div>
+            {/* Display existing notes */}
+          </div>
+        </CardContent>
+      </Card>
+     
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="border-primary/20 hover:shadow-lg transition-shadow duration-300">
           <CardHeader className="bg-primary/5 rounded-t-lg pb-2">
@@ -183,19 +278,33 @@ export function EquipmentDetail({ equipment, className }: EquipmentDetailProps) 
           </TabsTrigger>
         </TabsList>
         <TabsContent value="documents">
-          <DocumentList documents={equipment.documents} />
+          <DocumentList documents={documentsWithSample} />
         </TabsContent>
         <TabsContent value="history">
           <Card className="border-primary/20">
-            <CardContent className="p-6 text-center text-muted-foreground">
-              {isRTL ? "سيتم عرض سجل المعدات هنا" : "Equipment history will be displayed here"}
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                {mockHistory.map((h, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span className="font-medium">{h.event}</span>
+                    <span className="text-muted-foreground">{h.date} — {h.by}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="maintenance">
           <Card className="border-primary/20">
-            <CardContent className="p-6 text-center text-muted-foreground">
-              {isRTL ? "سيتم عرض سجلات الصيانة هنا" : "Maintenance records will be displayed here"}
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                {mockMaintenance.map((m, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span className="font-medium">{m.action}</span>
+                    <span className="text-muted-foreground">{m.date} — {m.by} — {m.status}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

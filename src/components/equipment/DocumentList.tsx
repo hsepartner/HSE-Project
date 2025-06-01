@@ -1,6 +1,5 @@
-
 import { Document, DocumentStatus, DocumentType } from "@/types/equipment";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,8 @@ import { DocumentStatusBadge } from "./DocumentStatusBadge";
 import { DocumentTypeBadge } from "./DocumentTypeBadge";
 import { StatusPill } from "@/components/status/StatusPill";
 import { getStatusFromDays } from "@/types/status";
-import { PlusIcon, FilterIcon, SearchIcon, SortAscIcon, FileIcon } from "lucide-react";
+import { PlusIcon, FilterIcon, SearchIcon, SortAscIcon, FileIcon, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 
 interface DocumentListProps {
   documents: Document[];
@@ -16,10 +16,21 @@ interface DocumentListProps {
 }
 
 export function DocumentList({ documents: initialDocuments, className }: DocumentListProps) {
-  const [documents] = useState<Document[]>(initialDocuments);
+  const [documents, setDocuments] = useState<Document[]>(initialDocuments);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<DocumentType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    type: "manual" as DocumentType,
+    status: "pending" as DocumentStatus,
+    issueDate: "",
+    expiryDate: "",
+    issuedBy: "",
+    file: null as File | null,
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Calculate days until expiry
   const getDaysUntilExpiry = (expiryDate: string): number => {
@@ -38,12 +49,40 @@ export function DocumentList({ documents: initialDocuments, className }: Documen
     return matchesSearch && matchesType && matchesStatus;
   });
   
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(prev => ({ ...prev, file: e.target.files ? e.target.files[0] : null }));
+  };
+
+  const handleAddDocument = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.issueDate || !form.expiryDate) return;
+    const newDoc: Document = {
+      id: `doc-${Date.now()}`,
+      name: form.name,
+      type: form.type,
+      status: form.status,
+      issueDate: form.issueDate,
+      expiryDate: form.expiryDate,
+      issuedBy: form.issuedBy,
+      fileUrl: form.file ? URL.createObjectURL(form.file) : undefined,
+    };
+    setDocuments([newDoc, ...documents]);
+    setIsModalOpen(false);
+    setForm({ name: "", type: "manual", status: "pending", issueDate: "", expiryDate: "", issuedBy: "", file: null });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <div className={cn("space-y-4", className)}>
       <div className="flex flex-col md:flex-row gap-2 justify-between">
         <div className="flex gap-2 items-center">
           <h2 className="text-xl font-semibold">Documents</h2>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
             <PlusIcon className="h-4 w-4 mr-1" />
             Add Document
           </Button>
@@ -157,6 +196,19 @@ export function DocumentList({ documents: initialDocuments, className }: Documen
                           {item.issuedBy || 'Unknown issuer'}
                         </div>
                       </div>
+                      {item.fileUrl && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="ml-2"
+                          asChild
+                          title="Preview/Download"
+                        >
+                          <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="col-span-2">
@@ -185,6 +237,42 @@ export function DocumentList({ documents: initialDocuments, className }: Documen
           )}
         </div>
       </div>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <form onSubmit={handleAddDocument} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Add Document</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Input name="name" placeholder="Document Name" value={form.name} onChange={handleFormChange} required />
+              <div className="flex gap-2">
+                <select name="type" value={form.type} onChange={handleFormChange} className="border rounded px-2 py-1 flex-1">
+                  <option value="manual">Manual</option>
+                  <option value="certificate">Certificate</option>
+                  <option value="inspection">Inspection</option>
+                </select>
+                <select name="status" value={form.status} onChange={handleFormChange} className="border rounded px-2 py-1 flex-1">
+                  <option value="pending">Pending</option>
+                  <option value="verified">Verified</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Input name="issueDate" type="date" value={form.issueDate} onChange={handleFormChange} required className="flex-1" />
+                <Input name="expiryDate" type="date" value={form.expiryDate} onChange={handleFormChange} required className="flex-1" />
+              </div>
+              <Input name="issuedBy" placeholder="Issued By" value={form.issuedBy} onChange={handleFormChange} />
+              <Input name="file" type="file" accept="application/pdf,image/*" onChange={handleFileChange} ref={fileInputRef} />
+            </div>
+            <DialogFooter>
+              <Button type="submit">Add</Button>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

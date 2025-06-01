@@ -7,290 +7,34 @@ import { EquipmentDetail } from "@/components/equipment/EquipmentDetail";
 import { EquipmentHierarchy } from "@/components/equipment/EquipmentHierarchy";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/use-language";
-import { Lightbulb, Plus, Video, Upload } from "lucide-react";
+import { Lightbulb, Plus, Video } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
-import { Loader2, PlusCircle } from "lucide-react";
 import AddEquipmentModal from "@/components/equipment/AddEquipmentModal";
 import { EquipmentCategoryCard } from "@/components/equipment/EquipmentCategoryCard";
 import { EquipmentTypeList } from "@/components/equipment/EquipmentTypeList";
+import { SAMPLE_EQUIPMENT } from "./EquipmentRegistry";
 
-// Sample data (unchanged)
-const SAMPLE_EQUIPMENT: Equipment[] = [
-  {
-    id: "1",
-    name: "Crawler Crane",
-    model: "Liebherr LR 1300",
-    serialNumber: "LR1300-0001",
-    category: "heavy",
-    status: "active",
-    complianceScore: 92,
-    nextInspectionDate: "2025-08-15",
-    purchaseDate: "2020-05-10",
-    location: "Site A - North",
-    assignedTo: "John Operator",
-    image: "/images/Crawler Crane.png",
-    documents: [
-      {
-        id: "d1",
-        name: "Operation Certificate",
-        type: "certificate",
-        status: "verified",
-        issueDate: "2024-01-15",
-        expiryDate: "2025-08-15",
-        issuedBy: "Safety Authority",
-      },
-      {
-        id: "d2",
-        name: "Maintenance Manual",
-        type: "manual",
-        status: "verified",
-        issueDate: "2020-05-10",
-        expiryDate: "2030-05-10",
-        issuedBy: "Manufacturer",
-      },
-      {
-        id: "d3",
-        name: "Last Inspection Report",
-        type: "inspection",
-        status: "verified",
-        issueDate: "2024-02-10",
-        expiryDate: "2024-08-10",
-        issuedBy: "TechInspect Inc.",
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Excavator",
-    model: "CAT 320",
-    serialNumber: "CAT320-45678",
-    category: "heavy",
-    status: "maintenance",
-    complianceScore: 65,
-    nextInspectionDate: "2025-06-20",
-    purchaseDate: "2021-07-15",
-    location: "Site B - East",
-    assignedTo: "Maria Operator",
-    image: "/images/Excavator.png",
-    documents: [
-      {
-        id: "d4",
-        name: "Registration",
-        type: "certificate",
-        status: "verified",
-        issueDate: "2023-07-15",
-        expiryDate: "2024-07-15",
-        issuedBy: "DMV",
-      },
-      {
-        id: "d5",
-        name: "Maintenance Schedule",
-        type: "manual",
-        status: "pending",
-        issueDate: "2021-07-15",
-        expiryDate: "2031-07-15",
-        issuedBy: "Ford",
-      },
-    ],
-    parentEquipmentId: "1",
-  },
-  {
-    id: "3",
-    name: "JCB",
-    model: "JCB 3CX",
-    serialNumber: "JCB3CX-78901",
-    category: "heavy",
-    status: "active",
-    complianceScore: 78,
-    nextInspectionDate: "2024-05-05",
-    purchaseDate: "2022-01-20",
-    location: "Site C - Workshop",
-    assignedTo: "Ahmed Operator",
-    image: "/images/JCB.png",
-    documents: [
-      {
-        id: "d6",
-        name: "Warranty",
-        type: "certificate",
-        status: "verified",
-        issueDate: "2022-01-20",
-        expiryDate: "2025-01-20",
-        issuedBy: "Honda",
-      },
-      {
-        id: "d7",
-        name: "Electrical Safety Inspection",
-        type: "inspection",
-        status: "pending",
-        issueDate: "2023-05-05",
-        expiryDate: "2024-05-05",
-        issuedBy: "ElecSafe Corp",
-      },
-    ],
-  },
-  {
-    id: "4",
-    name: "Hlab",
-    model: "HLAB X1",
-    serialNumber: "HLABX1-12345",
-    category: "heavy",
-    status: "decommissioned",
-    complianceScore: 20,
-    nextInspectionDate: "2024-03-01",
-    purchaseDate: "2018-11-05",
-    location: "Warehouse",
-    assignedTo: "Sarah Operator",
-    image: "/images/hlab.png",
-    documents: [
-      {
-        id: "d8",
-        name: "Decommission Report",
-        type: "inspection",
-        status: "rejected",
-        issueDate: "2024-01-30",
-        expiryDate: "2024-03-01",
-        issuedBy: "Safety Dept",
-      },
-    ],
-  },
-  {
-    id: "5",
-    name: "Telehandler",
-    model: "JLG 4017RS",
-    serialNumber: "JLG4017-56789",
-    category: "heavy",
-    status: "active",
-    complianceScore: 85,
-    nextInspectionDate: "2024-08-10",
-    purchaseDate: "2023-02-15",
-    location: "Site A - Workshop",
-    assignedTo: "James Operator",
-    image: "/images/TELEHANDLER.png",
-    documents: [
-      {
-        id: "d9",
-        name: "Safety Manual",
-        type: "manual",
-        status: "verified",
-        issueDate: "2023-02-15",
-        expiryDate: "2033-02-15",
-        issuedBy: "DeWalt",
-      },
-      {
-        id: "d10",
-        name: "Calibration Certificate",
-        type: "certificate",
-        status: "pending",
-        issueDate: "2023-08-10",
-        expiryDate: "2024-08-10",
-        issuedBy: "ToolCal Inc.",
-      },
-    ],
-    parentEquipmentId: "3",
-  },
-  {
-    id: "6",
-    name: "Wheel Loader",
-    model: "CAT 950GC",
-    serialNumber: "CAT950GC-24680",
-    category: "heavy",
-    status: "maintenance",
-    complianceScore: 55,
-    nextInspectionDate: "2024-09-01",
-    purchaseDate: "2021-03-10",
-    location: "Site D - South",
-    assignedTo: "Emily Operator",
-    image: "/images/Wheelloader.png",
-    documents: [
-      {
-        id: "d11",
-        name: "Registration",
-        type: "certificate",
-        status: "verified",
-        issueDate: "2023-07-15",
-        expiryDate: "2024-07-15",
-        issuedBy: "DMV",
-      },
-      {
-        id: "d12",
-        name: "Maintenance Schedule",
-        type: "manual",
-        status: "pending",
-        issueDate: "2021-07-15",
-        expiryDate: "2031-07-15",
-        issuedBy: "Ford",
-      },
-    ],
-  },
-];
+const SAMPLE_POWER_TOOLS = SAMPLE_EQUIPMENT.filter(e => e.category === 'power-tool');
 
-// Equipment types data from Dashboard.tsx
-const equipmentTypes = [
-  {
-    name: "Crawler Crane",
-    image: "/images/Crawler Crane.png",
-    category: "heavy",
-  },
-  {
-    name: "Excavator",
-    image: "/images/Excavator.png",
-    category: "heavy",
-  },
-  {
-    name: "JCB",
-    image: "/images/JCB.png",
-    category: "heavy",
-  },
-  {
-    name: "Hlab",
-    image: "/images/hlab.png",
-    category: "heavy",
-  },
-  {
-    name: "Telehandler",
-    image: "/images/TELEHANDLER.png",
-    category: "heavy",
-  },
-  {
-    name: "Wheel Loader",
-    image: "/images/Wheelloader.png",
-    category: "heavy",
-  },
-];
+const powerToolTypes = SAMPLE_POWER_TOOLS.map(e => ({
+  name: e.name,
+  image: e.image,
+  category: e.category,
+}));
 
-const EquipmentRegistry = () => {
+const PowerTools = () => {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
   const [activeTab, setActiveTab] = useState("list");
   const [viewMode, setViewMode] = useState<'categories' | 'type-list' | 'detail'>('categories');
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(SAMPLE_EQUIPMENT[0]);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(SAMPLE_POWER_TOOLS[0] || null);
   const [selectedEquipmentType, setSelectedEquipmentType] = useState<string>("");
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
-  // Group equipment by type
-  const groupedEquipment = SAMPLE_EQUIPMENT.reduce((acc, equipment) => {
+  // Group power tools by type
+  const groupedEquipment = SAMPLE_POWER_TOOLS.reduce((acc, equipment) => {
     if (!acc[equipment.name]) {
       acc[equipment.name] = [];
     }
@@ -308,10 +52,6 @@ const EquipmentRegistry = () => {
     setTimeout(() => {
       setLoading(false);
       setIsModalOpen(false);
-      toast({
-        title: isRTL ? "نجاح" : "Success",
-        description: isRTL ? `تم إكمال ${action} بنجاح` : `${action} completed successfully`,
-      });
     }, 2000);
   };
 
@@ -321,12 +61,12 @@ const EquipmentRegistry = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {isRTL ? "سجل المعدات" : "Equipment Registry"}
+              {isRTL ? "سجل الأدوات الكهربائية" : "Power Tools Registry"}
             </h1>
             <p className="text-muted-foreground mt-2">
               {isRTL
-                ? "إدارة ومراقبة جميع المعدات والوثائق المرتبطة بها"
-                : "Manage and monitor all equipment and associated documentation"}
+                ? "إدارة ومراقبة جميع الأدوات الكهربائية والوثائق المرتبطة بها"
+                : "Manage and monitor all power tools and associated documentation"}
             </p>
           </div>
           <Button
@@ -334,7 +74,7 @@ const EquipmentRegistry = () => {
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
-            {isRTL ? "إضافة معدات" : "Add Equipment"}
+            {isRTL ? "إضافة أداة كهربائية" : "Add Power Tool"}
           </Button>
         </div>
 
@@ -351,8 +91,8 @@ const EquipmentRegistry = () => {
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   {isRTL
-                    ? "تعرف على كيفية إدارة سجل المعدات بفعالية"
-                    : "Learn how to manage the equipment registry effectively"}
+                    ? "تعرف على كيفية إدارة سجل الأدوات الكهربائية بفعالية"
+                    : "Learn how to manage the power tools registry effectively"}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   <div className="bg-background rounded-lg p-3 flex items-start gap-2">
@@ -361,8 +101,8 @@ const EquipmentRegistry = () => {
                     </div>
                     <p className="text-sm">
                       {isRTL
-                        ? "قم بتحديث حالة المعدات بانتظام"
-                        : "Regularly update equipment status"}
+                        ? "قم بتحديث حالة الأدوات الكهربائية بانتظام"
+                        : "Regularly update power tool status"}
                     </p>
                   </div>
                   <div className="bg-background rounded-lg p-3 flex items-start gap-2">
@@ -381,8 +121,8 @@ const EquipmentRegistry = () => {
                     </div>
                     <p className="text-sm">
                       {isRTL
-                        ? "استخدم التسلسل الهرمي لتنظيم المعدات"
-                        : "Use hierarchy to organize equipment"}
+                        ? "استخدم التسلسل الهرمي لتنظيم الأدوات الكهربائية"
+                        : "Use hierarchy to organize power tools"}
                     </p>
                   </div>
                 </div>
@@ -415,7 +155,7 @@ const EquipmentRegistry = () => {
 
           <TabsContent value="list" className="mt-6">
             <EquipmentList
-              equipment={SAMPLE_EQUIPMENT}
+              equipment={SAMPLE_POWER_TOOLS}
               onSelect={handleSelectEquipment}
             />
           </TabsContent>
@@ -423,7 +163,7 @@ const EquipmentRegistry = () => {
           <TabsContent value="detail" className="mt-6">
             {viewMode === 'categories' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(groupedEquipment).slice(0, 5).map(([type, equipment]) => (
+                {Object.entries(groupedEquipment).map(([type, equipment]) => (
                   <EquipmentCategoryCard
                     key={type}
                     equipment={equipment}
@@ -462,7 +202,7 @@ const EquipmentRegistry = () => {
           </TabsContent>
 
           <TabsContent value="hierarchy" className="mt-6">
-            <EquipmentHierarchy equipment={SAMPLE_EQUIPMENT} />
+            <EquipmentHierarchy equipment={SAMPLE_POWER_TOOLS} />
           </TabsContent>
         </Tabs>
 
@@ -477,19 +217,19 @@ const EquipmentRegistry = () => {
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
-            {isRTL ? "إضافة معدات" : "Add Equipment"}
+            {isRTL ? "إضافة أداة كهربائية" : "Add Power Tool"}
           </Button>
         </div>
 
-        {/* Add Equipment Modal (Updated to match Dashboard.tsx) */}
+        {/* Add Power Tool Modal */}
         <AddEquipmentModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
-          equipmentTypes={equipmentTypes}
+          equipmentTypes={powerToolTypes}
           selectedEquipmentType={selectedEquipmentType}
           setSelectedEquipmentType={setSelectedEquipmentType}
           loading={loading}
-          onSubmit={() => simulateAction(isRTL ? "تسجيل المعدات" : "Equipment registration")}
+          onSubmit={() => simulateAction(isRTL ? "تسجيل الأداة الكهربائية" : "Power tool registration")}
           isRTL={isRTL}
           onCancel={() => setIsModalOpen(false)}
         />
@@ -498,5 +238,4 @@ const EquipmentRegistry = () => {
   );
 };
 
-export default EquipmentRegistry;
-export { SAMPLE_EQUIPMENT };
+export default PowerTools; 

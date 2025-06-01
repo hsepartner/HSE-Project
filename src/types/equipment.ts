@@ -1,4 +1,4 @@
-export type EquipmentCategory = 'heavy' | 'light' | 'power-tool';
+export type EquipmentCategory = 'heavy' | 'light' | 'power-tool' | 'lifting-tool';
 export type OperationalStatus = 'active' | 'maintenance' | 'decommissioned';
 export type DocumentStatus = 'verified' | 'pending' | 'rejected';
 export type DocumentType = 'certificate' | 'manual' | 'inspection';
@@ -48,6 +48,11 @@ export const CATEGORY_CONFIG = {
     label: 'Power Tools',
     color: 'orange-500',
     icon: 'wrench'
+  },
+  'lifting-tool': {
+    label: 'Lifting Tools',
+    color: 'red-500',
+    icon: 'settings'
   }
 };
 
