@@ -7,31 +7,12 @@ import { EquipmentDetail } from "@/components/equipment/EquipmentDetail";
 import { EquipmentHierarchy } from "@/components/equipment/EquipmentHierarchy";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/use-language";
-import { Lightbulb, Plus, Video, Upload } from "lucide-react";
+import { Lightbulb, Plus, Video } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, PlusCircle } from "lucide-react";
-import AddEquipmentModal from "@/components/equipment/AddEquipmentModal";
 import { EquipmentCategoryCard } from "@/components/equipment/EquipmentCategoryCard";
 import { EquipmentTypeList } from "@/components/equipment/EquipmentTypeList";
+import AddEquipmentModal from "@/components/equipment/AddEquipmentModal";
 
 // Sample data (unchanged)
 const SAMPLE_EQUIPMENT: Equipment[] = [
@@ -287,6 +268,7 @@ const EquipmentRegistry = () => {
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedProject, setSelectedProject] = useState("Project A"); // State for project tabs
   const { toast } = useToast();
 
   // Group equipment by type
@@ -318,6 +300,35 @@ const EquipmentRegistry = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6">
+        {/* Project Tabs at the Top */}
+        <Tabs
+          value={selectedProject}
+          onValueChange={setSelectedProject}
+          className="w-full"
+        >
+          <TabsList className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
+            <TabsTrigger
+              value="Project A"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project A
+            </TabsTrigger>
+            <TabsTrigger
+              value="Project B"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project B
+            </TabsTrigger>
+            <TabsTrigger
+              value="Project C"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project C
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Equipment Registry Section */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
@@ -481,7 +492,7 @@ const EquipmentRegistry = () => {
           </Button>
         </div>
 
-        {/* Add Equipment Modal (Updated to match Dashboard.tsx) */}
+        {/* Add Equipment Modal */}
         <AddEquipmentModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}

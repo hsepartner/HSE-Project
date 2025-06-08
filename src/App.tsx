@@ -42,6 +42,7 @@ const Settings = React.lazy(() => import("./pages/Settings"));
 const OperatorManagement = React.lazy(() => import("./pages/OperatorManagement"));
 const PowerTools = React.lazy(() => import("./pages/PowerTools"));
 const LiftingTools = React.lazy(() => import("./pages/LiftingTools"));
+const Projects = React.lazy(() => import("./pages/Projects"));
 
 const Loading = () => (
   <div className="flex items-center justify-center h-screen">
@@ -307,6 +308,17 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Suspense fallback={<Loading />}>
               <LiftingTools />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <Projects />
             </Suspense>
           </ProtectedRoute>
         }
