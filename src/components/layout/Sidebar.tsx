@@ -76,7 +76,7 @@ export function Sidebar({
 
   const managementModules: Module[] = [
     { name: t('users'), icon: Users, path: '/users', status: 'valid' },
-    { name: t('projects'), icon: FileText, path: '/projects', status: 'valid' },
+    { name: t('Projects'), icon: FileText, path: '/projects', status: 'valid' },
     { name: t('analytics'), icon: BarChart3, path: '/analytics', status: 'valid' },
     { name: t('documents'), icon: FileText, path: '/documents', status: 'inactive' },
     { name: t('settings'), icon: Settings, path: '/settings', status: 'inactive' },

@@ -375,6 +375,59 @@ export function Dashboard() {
     >
       <WelcomeHeader />
 
+      {/* Equipment Showcase */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Equipment Overview Card */}
+        <Card className="col-span-full">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>{isRTL ? "نظرة عامة على المعدات" : "Equipment Overview"}</CardTitle>
+                <CardDescription>
+                  {isRTL ? "إدارة ومراقبة المعدات الخاصة بك" : "Manage and monitor your equipment"}
+                </CardDescription>
+              </div>
+              <Button variant="outline" asChild>
+                <Link to="/equipment">
+                  <Truck className="h-4 w-4 mr-2" />
+                  {isRTL ? "سجل المعدات" : "Equipment Registry"}
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {equipmentTypes.map((type, index) => (
+                <div
+                  key={type.name}
+                  className="relative group cursor-pointer"
+                  onClick={() => handleButtonClick("equipmentRegistry")}
+                >
+                  <div className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all">
+                    <div className="p-2">
+                      <div className="aspect-square relative">
+                        <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </div>
+                        <img
+                          src={type.image}
+                          alt={type.name}
+                          className="w-full h-full object-contain p-2"
+                        />
+                      </div>
+                      <div className="pt-2 text-center">
+                        <h3 className="text-sm font-medium truncate">{type.name}</h3>
+                        <CategoryBadge category={type.category} size="sm" className="mt-1" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Keep only analytics charts and alerts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card className="bg-gradient-to-br from-blue-100 via-white to-blue-50 border-blue-300 shadow-blue-100/60 shadow-lg rounded-2xl transition-transform hover:scale-[1.02]">

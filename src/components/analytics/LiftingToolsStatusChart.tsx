@@ -4,27 +4,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Truck, Settings, Archive } from "lucide-react";
 
-// Enhanced data with additional properties
+// Enhanced data with additional properties for lifting tools
 const data = [
   { 
     name: "Active", 
-    value: 3, 
+    value: 12, 
     fill: "#22c55e",
     gradient: "url(#activeGradient)",
     icon: Truck,
-    description: "Tools ready for lifting operations"
+    description: "Tools in active operation"
   },
   { 
-    name: "Maintenance", 
-    value: 1, 
+    name: "Inspection", 
+    value: 4, 
     fill: "#eab308",
     gradient: "url(#maintenanceGradient)",
     icon: Settings,
-    description: "Tools under inspection/repair"
+    description: "Tools under inspection/maintenance"
   },
   { 
-    name: "Decommissioned", 
-    value: 0, 
+    name: "Inactive", 
+    value: 2, 
     fill: "#6b7280",
     gradient: "url(#decommissionedGradient)",
     icon: Archive,
@@ -34,8 +34,8 @@ const data = [
 
 const chartConfig: ChartConfig = {
   active: { label: "Active", theme: { light: "#22c55e", dark: "#16a34a" } },
-  maintenance: { label: "Maintenance", theme: { light: "#eab308", dark: "#ca8a04" } },
-  decommissioned: { label: "Decommissioned", theme: { light: "#6b7280", dark: "#52525b" } },
+  inspection: { label: "Inspection", theme: { light: "#eab308", dark: "#ca8a04" } },
+  inactive: { label: "Inactive", theme: { light: "#6b7280", dark: "#52525b" } },
 };
 
 // Filter out zero values for display
@@ -190,21 +190,21 @@ export function LiftingToolsStatusChart() {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
               <span className="text-gray-600 dark:text-gray-400">
-                {total > 0 ? ((data[0].value / total) * 100).toFixed(0) : '0'}% operational readiness
+                {total > 0 ? ((data[0].value / total) * 100).toFixed(0) : '0'}% tools ready for use
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
               <span className="text-gray-600 dark:text-gray-400">
-                {data[1].value} {data[1].value === 1 ? 'tool requires' : 'tools require'} maintenance
+                {data[1].value} {data[1].value === 1 ? 'tool' : 'tools'} due for inspection
               </span>
             </div>
           </div>
           
-          {/* Safety note for lifting equipment */}
+          {/* Equipment safety note */}
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border-l-4 border-blue-400">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Safety Note:</strong> All lifting equipment must undergo regular inspection and certification before use.
+              <strong>Equipment Status:</strong> Regular inspection and maintenance ensure optimal tool performance and safety compliance.
             </p>
           </div>
         </div>

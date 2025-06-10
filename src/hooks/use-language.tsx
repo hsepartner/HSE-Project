@@ -137,7 +137,8 @@ const translations: Record<string, Record<string, string>> = {
     "certifications": "الشهادات",
     "scheduling": "الجدولة",
     "users": "المستخدمون",
-    "documents": "المستندات"
+    "documents": "المستندات",
+    "Projects": "المشاريع"
   }
 };
 

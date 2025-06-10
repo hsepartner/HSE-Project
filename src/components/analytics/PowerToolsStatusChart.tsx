@@ -2,40 +2,49 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recha
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Settings, Archive } from "lucide-react";
+import { Wrench, Settings, Archive, AlertTriangle } from "lucide-react";
 
-// Enhanced data with additional properties
+// Enhanced data with additional properties based on PowerTools bio-data
 const data = [
   { 
-    name: "Active", 
-    value: 15, 
+    name: "Operational", 
+    value: 42, 
     fill: "#22c55e",
-    gradient: "url(#activeGradient)",
+    gradient: "url(#operationalGradient)",
     icon: Wrench,
     description: "Tools ready for use"
   },
   { 
     name: "Maintenance", 
-    value: 6, 
+    value: 12, 
     fill: "#eab308",
     gradient: "url(#maintenanceGradient)",
     icon: Settings,
-    description: "Tools under repair"
+    description: "Tools under maintenance"
   },
   { 
-    name: "Decommissioned", 
-    value: 2, 
+    name: "Under Repair", 
+    value: 6, 
+    fill: "#ef4444",
+    gradient: "url(#repairGradient)",
+    icon: AlertTriangle,
+    description: "Tools being repaired"
+  },
+  { 
+    name: "Inactive", 
+    value: 8, 
     fill: "#6b7280",
-    gradient: "url(#decommissionedGradient)",
+    gradient: "url(#inactiveGradient)",
     icon: Archive,
-    description: "Tools out of service"
+    description: "Tools not in use"
   }
 ];
 
 const chartConfig: ChartConfig = {
-  active: { label: "Active", theme: { light: "#22c55e", dark: "#16a34a" } },
+  operational: { label: "Operational", theme: { light: "#22c55e", dark: "#16a34a" } },
   maintenance: { label: "Maintenance", theme: { light: "#eab308", dark: "#ca8a04" } },
-  decommissioned: { label: "Decommissioned", theme: { light: "#6b7280", dark: "#52525b" } },
+  repair: { label: "Under Repair", theme: { light: "#ef4444", dark: "#dc2626" } },
+  inactive: { label: "Inactive", theme: { light: "#6b7280", dark: "#52525b" } },
 };
 
 // Custom label component for better positioning
@@ -88,7 +97,7 @@ const StatsSummary = () => {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
   return (
-    <div className="grid grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-4 gap-4 mb-6">
       {data.map((item) => {
         const IconComponent = item.icon;
         const percentage = ((item.value / total) * 100).toFixed(1);
@@ -123,10 +132,10 @@ export function PowerToolsStatusChart() {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <Card className="w-full bg-transparent border-none">
+    <Card className="w-full bg-transparent border-none shadow-none">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between mb-6">
-          <Badge variant="outline">
+          <Badge variant="outline" className="bg-white/80 backdrop-blur-sm">
             {total} Total Tools
           </Badge>
         </div>
@@ -138,7 +147,7 @@ export function PowerToolsStatusChart() {
             <PieChart>
               {/* Gradient definitions */}
               <defs>
-                <linearGradient id="activeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="operationalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#22c55e" stopOpacity={1} />
                   <stop offset="100%" stopColor="#16a34a" stopOpacity={1} />
                 </linearGradient>
@@ -146,7 +155,11 @@ export function PowerToolsStatusChart() {
                   <stop offset="0%" stopColor="#eab308" stopOpacity={1} />
                   <stop offset="100%" stopColor="#ca8a04" stopOpacity={1} />
                 </linearGradient>
-                <linearGradient id="decommissionedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="repairGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#dc2626" stopOpacity={1} />
+                </linearGradient>
+                <linearGradient id="inactiveGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#6b7280" stopOpacity={1} />
                   <stop offset="100%" stopColor="#52525b" stopOpacity={1} />
                 </linearGradient>
@@ -177,9 +190,9 @@ export function PowerToolsStatusChart() {
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>
-
+        
         {/* Additional insights */}
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="mt-6 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg border border-white/20">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
             Quick Insights
           </h3>
@@ -193,7 +206,7 @@ export function PowerToolsStatusChart() {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
               <span className="text-gray-600 dark:text-gray-400">
-                {data[1].value} tools need attention
+                {data[1].value + data[2].value} tools need attention
               </span>
             </div>
           </div>

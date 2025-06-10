@@ -214,7 +214,6 @@ const Certifications = () => {
           </div>
           <Button
             onClick={() => setIsModalOpen(true)}
-            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
           >
             <Upload className="h-4 w-4" />
             {isRTL ? "رفع شهادة جديدة" : "Upload New Certificate"}
