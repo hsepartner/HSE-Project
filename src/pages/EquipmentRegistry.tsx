@@ -43,10 +43,10 @@ interface Equipment {
     issuedBy: string;
   }>;
   parentEquipmentId?: string;
-  project: string; // Added project field
+  project: string;
 }
 
-// Updated sample data to include project field
+// Sample data (unchanged from your edited code)
 const SAMPLE_EQUIPMENT: Equipment[] = [
   {
     id: "1",
@@ -1081,7 +1081,7 @@ const EquipmentRegistry = () => {
             <EquipmentList
               equipment={projectFilteredEquipment}
               onSelect={handleSelectEquipment}
-              onShare={handleShareEquipment} // Pass share handler
+              onShare={handleShareEquipment}
             />
           </TabsContent>
 
@@ -1112,8 +1112,11 @@ const EquipmentRegistry = () => {
                 equipment={filteredEquipment}
                 equipmentType={selectedEquipmentType}
                 onBack={() => setViewMode("categories")}
-                onSelectEquipment={handleSelectEquipment}
-                onShareEquipment={handleShareEquipment} // Pass share handler
+                onSelectEquipment={(equipment) => {
+                  setSelectedEquipment(equipment);
+                  setViewMode("detail");
+                }}
+                onShareEquipment={handleShareEquipment}
                 isRTL={isRTL}
               />
             )}
@@ -1122,7 +1125,7 @@ const EquipmentRegistry = () => {
               <EquipmentDetail
                 equipment={selectedEquipment}
                 onBack={() => setViewMode("type-list")}
-                onShare={() => handleShareEquipment(selectedEquipment)} // Pass share handler
+                onShare={() => handleShareEquipment(selectedEquipment)}
               />
             )}
           </TabsContent>
