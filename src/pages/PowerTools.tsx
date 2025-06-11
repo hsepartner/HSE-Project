@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/hooks/use-language";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -34,10 +35,10 @@ import {
   Edit,
   Trash2,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Share2
 } from "lucide-react";
 import { format } from "date-fns";
-import { toast } from "@/components/ui/use-toast";
 
 // Enhanced Equipment interface with bio-data fields
 interface PowerTool {
@@ -69,6 +70,7 @@ interface PowerTool {
   safetyAccessories: string;
   status: 'active' | 'maintenance' | 'inactive';
   image?: string;
+  project: string; // Added project field
 }
 
 // Sample data with enhanced bio-data
@@ -100,7 +102,8 @@ const SAMPLE_POWER_TOOLS: PowerTool[] = [
     operatorName: "Javed Iqbal",
     storageLocation: "Tool Cabinet 2",
     safetyAccessories: "Gloves, Goggles, Ear Protection",
-    status: "active"
+    status: "active",
+    project: "Project A"
   },
   {
     id: "PT-00124",
@@ -129,7 +132,8 @@ const SAMPLE_POWER_TOOLS: PowerTool[] = [
     operatorName: "",
     storageLocation: "Store Room B",
     safetyAccessories: "Safety Glasses, Work Gloves",
-    status: "active"
+    status: "active",
+    project: "Project B"
   },
   {
     id: "PT-00125",
@@ -158,17 +162,147 @@ const SAMPLE_POWER_TOOLS: PowerTool[] = [
     operatorName: "Ahmed Hassan",
     storageLocation: "Tool Cabinet 1",
     safetyAccessories: "Ear Protection, Safety Glasses",
-    status: "maintenance"
+    status: "maintenance",
+    project: "Project C"
   }
 ];
+
+// ShareToolModal component
+const ShareToolModal = ({
+  open,
+  onOpenChange,
+  tool,
+  onShare,
+  loading,
+  isRTL,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tool: PowerTool | null;
+  onShare: (data: { email?: string; link?: string }) => void;
+  loading: boolean;
+  isRTL: boolean;
+}) => {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const [shareMethod, setShareMethod] = useState("email");
+  const [email, setEmail] = useState("");
+  const [shareLink, setShareLink] = useState("");
+
+  useEffect(() => {
+    if (tool) {
+      setShareLink(`https://example.com/tool/${tool.id}`);
+    }
+  }, [tool]);
+
+  const handleShare = () => {
+    if (shareMethod === "email" && !email.trim()) {
+      toast({
+        title: isRTL ? "خطأ" : "Error",
+        description: isRTL ? "يرجى إدخال بريد إلكتروني صالح" : "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    onShare(shareMethod === "email" ? { email } : { link: shareLink });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>
+            {isRTL ? "مشاركة الأداة" : "Share Tool"}
+          </DialogTitle>
+          <DialogDescription>
+            {isRTL
+              ? "شارك تفاصيل الأداة عبر البريد الإلكتروني أو رابط."
+              : "Share tool details via email or a link."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="share-method">
+              {isRTL ? "طريقة المشاركة" : "Share Method"}
+            </Label>
+            <Select
+              value={shareMethod}
+              onValueChange={setShareMethod}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={isRTL ? "اختر طريقة" : "Select method"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="email">{isRTL ? "بريد إلكتروني" : "Email"}</SelectItem>
+                <SelectItem value="link">{isRTL ? "رابط" : "Link"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {shareMethod === "email" ? (
+            <div className="grid gap-2">
+              <Label htmlFor="email">{isRTL ? "البريد الإلكتروني" : "Email Address"}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder={isRTL ? "أدخل البريد الإلكتروني" : "Enter email address"}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              <Label htmlFor="share-link">{isRTL ? "رابط المشاركة" : "Shareable Link"}</Label>
+              <Input
+                id="share-link"
+                value={shareLink}
+                readOnly
+                onClick={(e) => e.target.select()}
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareLink);
+                  toast({
+                    title: isRTL ? "تم النسخ" : "Copied",
+                    description: isRTL ? "تم نسخ الرابط إلى الحافظة" : "Link copied to clipboard",
+                  });
+                }}
+              >
+                {isRTL ? "نسخ الرابط" : "Copy Link"}
+              </Button>
+            </div>
+          )}
+
+          {tool && (
+            <div className="bg-muted p-3 rounded-md">
+              <p className="text-sm font-medium">{tool.toolName}</p>
+              <p className="text-xs text-muted-foreground">{tool.toolId}</p>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {isRTL ? "إلغاء" : "Cancel"}
+          </Button>
+          <Button onClick={handleShare} disabled={loading}>
+            {loading ? (isRTL ? "جارٍ المشاركة..." : "Sharing...") : (isRTL ? "مشاركة" : "Share")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const PowerTools = () => {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
+  const { toast } = useToast();
   
   // State management
-  const [activeTab, setActiveTab] = useState("list"); // Changed default to list
+  const [activeTab, setActiveTab] = useState("list");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedTool, setSelectedTool] = useState<PowerTool | null>(null);
@@ -178,6 +312,7 @@ const PowerTools = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState("Project A");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state for bio-data entry
@@ -207,7 +342,8 @@ const PowerTools = () => {
     operatorName: "",
     storageLocation: "",
     safetyAccessories: "",
-    status: "active"
+    status: "active",
+    project: "Project A"
   });
 
   // New state variables for edit functionality
@@ -245,6 +381,7 @@ const PowerTools = () => {
     if (!formData.condition) errors.condition = isRTL ? "حالة الأداة مطلوبة" : "Tool Condition is required";
     if (!formData.assignedLocation) errors.assignedLocation = isRTL ? "الموقع المخصص مطلوب" : "Assigned Location is required";
     if (!formData.assignedTo) errors.assignedTo = isRTL ? "التخصيص إلى مطلوب" : "Assigned To is required";
+    if (!formData.project) errors.project = isRTL ? "المشروع مطلوب" : "Project is required";
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -303,8 +440,25 @@ const PowerTools = () => {
     if (e) e.stopPropagation();
     setEditingTool(tool);
     setFormData(tool);
+    setImagePreview(tool.image || null);
     setIsModalOpen(true);
     setIsEditMode(true);
+  };
+
+  const handleShareTool = (tool: PowerTool, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedTool(tool);
+    setIsShareModalOpen(true);
+  };
+
+  const handleShare = (shareData: { email?: string; link?: string }) => {
+    setIsShareModalOpen(false);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL
+        ? `تمت مشاركة الأداة بنجاح عبر ${shareData.email ? "البريد الإلكتروني" : "رابط"}`
+        : `Tool shared successfully via ${shareData.email ? "email" : "link"}`,
+    });
   };
 
   const handleSaveTool = () => {
@@ -369,7 +523,8 @@ const PowerTools = () => {
       operatorName: "",
       storageLocation: "",
       safetyAccessories: "",
-      status: "active"
+      status: "active",
+      project: "Project A"
     });
     setImagePreview(null);
     setIsModalOpen(false);
@@ -384,17 +539,25 @@ const PowerTools = () => {
       tool.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === "all" || tool.status === filterStatus;
+    const matchesProject = tool.project === selectedProject;
     
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesFilter && matchesProject;
   });
 
   // Statistics
   const stats = {
-    total: tools.length,
-    active: tools.filter(t => t.status === 'active').length,
-    maintenance: tools.filter(t => t.status === 'maintenance').length,
-    dueCalibration: tools.filter(t => 
+    total: filteredTools.length,
+    active: filteredTools.filter(t => t.status === 'active').length,
+    maintenance: filteredTools.filter(t => t.status === 'maintenance').length,
+    dueCalibration: filteredTools.filter(t => 
       t.nextCalibrationDue && new Date(t.nextCalibrationDue) <= new Date()
+    ).length,
+    byType: filteredTools.reduce((acc, tool) => {
+      acc[tool.toolType] = (acc[tool.toolType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>),
+    expiredCerts: filteredTools.filter(t => 
+      t.certificateExpiryDate && new Date(t.certificateExpiryDate) <= new Date()
     ).length
   };
 
@@ -460,7 +623,9 @@ const PowerTools = () => {
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-semibold">
-                    {isRTL ? "نموذج بيانات الأداة الكهربائية" : "Power Tool Bio-Data Entry"}
+                    {isEditMode
+                      ? (isRTL ? "تعديل الأداة الكهربائية" : "Edit Power Tool")
+                      : (isRTL ? "نموذج بيانات الأداة الكهربائية" : "Power Tool Bio-Data Entry")}
                   </DialogTitle>
                 </DialogHeader>
                 
@@ -579,6 +744,26 @@ const PowerTools = () => {
                           onChange={(e) => handleInputChange('vendor', e.target.value)}
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="project">{isRTL ? "المشروع *" : "Project *"}</Label>
+                      <Select
+                        value={formData.project || ""}
+                        onValueChange={(value) => handleInputChange('project', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isRTL ? "اختر المشروع" : "Select project"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Project A">Project A</SelectItem>
+                          <SelectItem value="Project B">Project B</SelectItem>
+                          <SelectItem value="Project C">Project C</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {formErrors.project && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.project}</p>
+                      )}
                     </div>
 
                     <div>
@@ -825,44 +1010,47 @@ const PowerTools = () => {
                 </Tabs>
                 
                 <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                  <Button variant="outline" onClick={() => {
+                    setIsModalOpen(false);
+                    setFormData({
+                      toolName: "",
+                      toolId: "",
+                      toolType: "",
+                      manufacturer: "",
+                      modelNumber: "",
+                      powerRating: "",
+                      toolSize: "",
+                      weight: "",
+                      purchaseDate: null,
+                      vendor: "",
+                      condition: "new",
+                      assignedLocation: "",
+                      assignedTo: "",
+                      certificateNo: "",
+                      certificateIssueDate: null,
+                      certificateExpiryDate: null,
+                      nextCalibrationDue: null,
+                      inspectionFrequency: "monthly",
+                      lastInspectionDate: null,
+                      inspectionStatus: "passed",
+                      remarks: "",
+                      operatorLicenseRequired: false,
+                      operatorName: "",
+                      storageLocation: "",
+                      safetyAccessories: "",
+                      status: "active",
+                      project: "Project A"
+                    });
+                    setImagePreview(null);
+                    setIsEditMode(false);
+                    setEditingTool(null);
+                  }}>
                     {isRTL ? "إلغاء" : "Cancel"}
                   </Button>
-                  <Button onClick={() => {
-                    if (validateForm()) {
-                      // Add logic to save the tool data here
-                      setIsModalOpen(false);
-                      setFormData({
-                        toolName: "",
-                        toolId: "",
-                        toolType: "",
-                        manufacturer: "",
-                        modelNumber: "",
-                        powerRating: "",
-                        toolSize: "",
-                        weight: "",
-                        purchaseDate: null,
-                        vendor: "",
-                        condition: "new",
-                        assignedLocation: "",
-                        assignedTo: "",
-                        certificateNo: "",
-                        certificateIssueDate: null,
-                        certificateExpiryDate: null,
-                        nextCalibrationDue: null,
-                        inspectionFrequency: "monthly",
-                        lastInspectionDate: null,
-                        inspectionStatus: "passed",
-                        remarks: "",
-                        operatorLicenseRequired: false,
-                        operatorName: "",
-                        storageLocation: "",
-                        safetyAccessories: "",
-                        status: "active"
-                      });
-                    }
-                  }}>
-                    {isRTL ? "حفظ الأداة الكهربائية" : "Save Power Tool"}
+                  <Button onClick={handleSaveTool}>
+                    {isEditMode
+                      ? (isRTL ? "تحديث الأداة" : "Update Tool")
+                      : (isRTL ? "حفظ الأداة الكهربائية" : "Save Power Tool")}
                   </Button>
                 </div>
               </DialogContent>
@@ -870,8 +1058,36 @@ const PowerTools = () => {
           </div>
         </div>
 
+        {/* Project Tabs */}
+        <Tabs
+          value={selectedProject}
+          onValueChange={setSelectedProject}
+          className="w-full"
+        >
+          <TabsList className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
+            <TabsTrigger
+              value="Project A"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project A
+            </TabsTrigger>
+            <TabsTrigger
+              value="Project B"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project B
+            </TabsTrigger>
+            <TabsTrigger
+              value="Project C"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project C
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Stats Cards */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -881,6 +1097,9 @@ const PowerTools = () => {
                     {isRTL ? "إجمالي الأدوات" : "Total Tools"}
                   </p>
                   <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRTL ? "في المشروع الحالي" : "in current project"}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -895,6 +1114,9 @@ const PowerTools = () => {
                     {isRTL ? "نشطة" : "Active"}
                   </p>
                   <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
+                  <p className="text-xs text-green-600 mt-1">
+                    {Math.round((stats.active / stats.total || 1) * 100)}% {isRTL ? "نشط" : "active"}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -909,6 +1131,9 @@ const PowerTools = () => {
                     {isRTL ? "صيانة" : "Maintenance"}
                   </p>
                   <p className="text-2xl font-bold text-gray-900">{stats.maintenance}</p>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    {Math.round((stats.maintenance / stats.total || 1) * 100)}% {isRTL ? "صيانة" : "maintenance"}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -923,11 +1148,80 @@ const PowerTools = () => {
                     {isRTL ? "معايرة مستحقة" : "Due Calibration"}
                   </p>
                   <p className="text-2xl font-bold text-gray-900">{stats.dueCalibration}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRTL ? "الأدوات التي تحتاج إلى معايرة" : "tools needing calibration"}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div> */}
+
+          <Card className="md:col-span-2">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-sm text-gray-600">
+                  {isRTL ? "توزيع نوع الأداة" : "Tool Type Distribution"}
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {Object.entries(stats.byType).map(([type, count]) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="text-sm">{type}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full bg-primary"
+                          style={{
+                            width: `${(count / stats.total || 1) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium">{count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-sm text-gray-600">
+                  {isRTL ? "حالة الشهادات" : "Certificate Status"}
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {isRTL ? "شهادات صالحة" : "Valid Certificates"}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {stats.total - stats.expiredCerts}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {isRTL ? "شهادات منتهية" : "Expired Certificates"}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {stats.expiredCerts}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Quick Tips Section */}
         <Card className="bg-primary/5 border-primary/20">
@@ -1156,6 +1450,13 @@ const PowerTools = () => {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={(e) => handleShareTool(tool, e)}
+                              >
+                                <Share2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -1176,9 +1477,31 @@ const PowerTools = () => {
                       <CardTitle>{selectedTool.toolName}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">ID: {selectedTool.toolId}</p>
                     </div>
-                    <Button variant="outline" onClick={() => setViewMode('list')}>
-                      {isRTL ? "عودة إلى القائمة" : "Back to List"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => handleShareTool(selectedTool, e)}
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        {isRTL ? "مشاركة" : "Share"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => handleEditTool(selectedTool, e)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        {isRTL ? "تعديل" : "Edit"}
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setViewMode('list');
+                        setActiveTab('list');
+                        setSelectedTool(null);
+                      }}>
+                        {isRTL ? "عودة إلى القائمة" : "Back to List"}
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1201,6 +1524,10 @@ const PowerTools = () => {
                         <div>
                           <Label>{isRTL ? "القدرة" : "Power Rating"}</Label>
                           <p className="text-sm mt-1">{selectedTool.powerRating}</p>
+                        </div>
+                        <div>
+                          <Label>{isRTL ? "المشروع" : "Project"}</Label>
+                          <p className="text-sm mt-1">{selectedTool.project}</p>
                         </div>
                       </div>
                     </div>
@@ -1290,6 +1617,16 @@ const PowerTools = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Share Tool Modal */}
+        <ShareToolModal
+          open={isShareModalOpen}
+          onOpenChange={setIsShareModalOpen}
+          tool={selectedTool}
+          onShare={handleShare}
+          loading={false}
+          isRTL={isRTL}
+        />
       </div>
     </DashboardLayout>
   );

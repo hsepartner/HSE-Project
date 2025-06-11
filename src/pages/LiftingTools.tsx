@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/hooks/use-language";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -34,12 +35,12 @@ import {
   Edit,
   Trash2,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Share2
 } from "lucide-react";
 import { format } from "date-fns";
-import { toast } from "@/components/ui/use-toast";
 
-// Lifting Accessory interface
+// Lifting Accessory interface with project field
 interface LiftingAccessory {
   id: string;
   accessoryName: string;
@@ -69,6 +70,7 @@ interface LiftingAccessory {
   safetyColorCode: string;
   status: 'active' | 'inspection' | 'inactive';
   image?: string;
+  project: string;
 }
 
 // Sample data for lifting accessories
@@ -101,7 +103,8 @@ const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
     storageLocation: "Site B",
     safetyColorCode: "green",
     status: "inspection",
-    image: ""
+    image: "",
+    project: "Project A"
   },
   {
     id: "LA-00125",
@@ -131,17 +134,178 @@ const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
     storageLocation: "Tool Cabinet 1",
     safetyColorCode: "blue",
     status: "active",
-    image: ""
+    image: "",
+    project: "Project B"
+  },
+  {
+    id: "LA-00126",
+    accessoryName: "Chain Sling",
+    accessoryId: "CSL-0046",
+    accessoryType: "sling",
+    manufacturer: "Yoke",
+    modelNumber: "YCS-100",
+    safeWorkingLoad: "5T",
+    sizeDimensions: "Ø22mm x 4m",
+    weight: "8.2 kg",
+    purchaseDate: new Date("2023-12-10"),
+    vendor: "LiftPro Equipment",
+    condition: "good",
+    assignedLocation: "Site C",
+    assignedTo: "Rigging Crew",
+    certificateNo: "TPI-LA-2024-102",
+    certificateIssueDate: new Date("2024-01-15"),
+    certificateExpiryDate: new Date("2025-01-15"),
+    nextInspectionDue: new Date("2024-10-15"),
+    inspectionFrequency: "6 months",
+    lastInspectionDate: new Date("2024-04-15"),
+    inspectionStatus: "passed",
+    remarks: "Minor wear, monitor closely",
+    safetyCertified: true,
+    inspectorName: "Mohammed Ali",
+    storageLocation: "Storage Bay 2",
+    safetyColorCode: "yellow",
+    status: "active",
+    image: "",
+    project: "Project C"
   }
 ];
+
+// ShareAccessoryModal component
+const ShareAccessoryModal = ({
+  open,
+  onOpenChange,
+  accessory,
+  onShare,
+  loading,
+  isRTL,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  accessory: LiftingAccessory | null;
+  onShare: (data: { email?: string; link?: string }) => void;
+  loading: boolean;
+  isRTL: boolean;
+}) => {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const [shareMethod, setShareMethod] = useState("email");
+  const [email, setEmail] = useState("");
+  const [shareLink, setShareLink] = useState("");
+
+  useEffect(() => {
+    if (accessory) {
+      setShareLink(`https://example.com/accessory/${accessory.id}`);
+    }
+  }, [accessory]);
+
+  const handleShare = () => {
+    if (shareMethod === "email" && !email.trim()) {
+      toast({
+        title: isRTL ? "خطأ" : "Error",
+        description: isRTL ? "يرجى إدخال بريد إلكتروني صالح" : "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    onShare(shareMethod === "email" ? { email } : { link: shareLink });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>
+            {isRTL ? "مشاركة ملحق الرفع" : "Share Lifting Accessory"}
+          </DialogTitle>
+          <DialogDescription>
+            {isRTL
+              ? "شارك تفاصيل ملحق الرفع عبر البريد الإلكتروني أو رابط."
+              : "Share lifting accessory details via email or a link."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="share-method">
+              {isRTL ? "طريقة المشاركة" : "Share Method"}
+            </Label>
+            <Select
+              value={shareMethod}
+              onValueChange={setShareMethod}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={isRTL ? "اختر طريقة" : "Select method"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="email">{isRTL ? "بريد إلكتروني" : "Email"}</SelectItem>
+                <SelectItem value="link">{isRTL ? "رابط" : "Link"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {shareMethod === "email" ? (
+            <div className="grid gap-2">
+              <Label htmlFor="email">{isRTL ? "البريد الإلكتروني" : "Email Address"}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder={isRTL ? "أدخل البريد الإلكتروني" : "Enter email address"}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              <Label htmlFor="share-link">{isRTL ? "رابط المشاركة" : "Shareable Link"}</Label>
+              <Input
+                id="share-link"
+                value={shareLink}
+                readOnly
+                onClick={(e) => e.target.select()}
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareLink);
+                  toast({
+                    title: isRTL ? "تم النسخ" : "Copied",
+                    description: isRTL ? "تم نسخ الرابط إلى الحافظة" : "Link copied to clipboard",
+                  });
+                }}
+              >
+                {isRTL ? "نسخ الرابط" : "Copy Link"}
+              </Button>
+            </div>
+          )}
+
+          {accessory && (
+            <div className="bg-muted p-3 rounded-md">
+              <p className="text-sm font-medium">{accessory.accessoryName}</p>
+              <p className="text-xs text-muted-foreground">{accessory.accessoryId}</p>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {isRTL ? "إلغاء" : "Cancel"}
+          </Button>
+          <Button onClick={handleShare} disabled={loading}>
+            {loading ? (isRTL ? "جارٍ المشاركة..." : "Sharing...") : (isRTL ? "مشاركة" : "Share")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const LiftingTools = () => {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
+  const { toast } = useToast();
   
   // State management
   const [activeTab, setActiveTab] = useState("list");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedAccessory, setSelectedAccessory] = useState<LiftingAccessory | null>(null);
@@ -151,6 +315,7 @@ const LiftingTools = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState("Project A");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state for bio-data entry
@@ -181,7 +346,8 @@ const LiftingTools = () => {
     storageLocation: "",
     safetyColorCode: "",
     status: "active",
-    image: ""
+    image: "",
+    project: "Project A"
   });
 
   // State for edit functionality
@@ -219,6 +385,7 @@ const LiftingTools = () => {
     if (!formData.condition) errors.condition = isRTL ? "حالة الملحق مطلوبة" : "Accessory Condition is required";
     if (!formData.assignedLocation) errors.assignedLocation = isRTL ? "الموقع المخصص مطلوب" : "Assigned Location is required";
     if (!formData.assignedTo) errors.assignedTo = isRTL ? "التخصيص إلى مطلوب" : "Assigned To is required";
+    if (!formData.project) errors.project = isRTL ? "المشروع مطلوب" : "Project is required";
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -264,7 +431,7 @@ const LiftingTools = () => {
     }
   };
 
-  // Handlers for view and edit
+  // Handlers for view, edit, and share
   const handleViewAccessory = (accessory: LiftingAccessory, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setSelectedAccessory(accessory);
@@ -280,6 +447,22 @@ const LiftingTools = () => {
     setImagePreview(accessory.image || null);
     setIsModalOpen(true);
     setIsEditMode(true);
+  };
+
+  const handleShareAccessory = (accessory: LiftingAccessory, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedAccessory(accessory);
+    setIsShareModalOpen(true);
+  };
+
+  const handleShare = (shareData: { email?: string; link?: string }) => {
+    setIsShareModalOpen(false);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL
+        ? `تمت مشاركة ملحق الرفع بنجاح عبر ${shareData.email ? "البريد الإلكتروني" : "رابط"}`
+        : `Lifting accessory shared successfully via ${shareData.email ? "email" : "link"}`,
+    });
   };
 
   const handleSaveAccessory = () => {
@@ -345,7 +528,8 @@ const LiftingTools = () => {
       storageLocation: "",
       safetyColorCode: "",
       status: "active",
-      image: ""
+      image: "",
+      project: "Project A"
     });
     setImagePreview(null);
     setIsModalOpen(false);
@@ -360,17 +544,25 @@ const LiftingTools = () => {
       accessory.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === "all" || accessory.status === filterStatus;
+    const matchesProject = accessory.project === selectedProject;
     
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesFilter && matchesProject;
   });
 
   // Statistics
   const stats = {
-    total: accessories.length,
-    active: accessories.filter(a => a.status === 'active').length,
-    inspection: accessories.filter(a => a.status === 'inspection').length,
-    dueInspection: accessories.filter(a => 
+    total: filteredAccessories.length,
+    active: filteredAccessories.filter(a => a.status === 'active').length,
+    inspection: filteredAccessories.filter(a => a.status === 'inspection').length,
+    dueInspection: filteredAccessories.filter(a => 
       a.nextInspectionDue && new Date(a.nextInspectionDue) <= new Date()
+    ).length,
+    byType: filteredAccessories.reduce((acc, accessory) => {
+      acc[accessory.accessoryType] = (acc[accessory.accessoryType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>),
+    expiredCerts: filteredAccessories.filter(a => 
+      a.certificateExpiryDate && new Date(a.certificateExpiryDate) <= new Date()
     ).length
   };
 
@@ -436,7 +628,9 @@ const LiftingTools = () => {
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-semibold">
-                    {isRTL ? "نموذج بيانات ملحق الرفع" : "Lifting Accessory Bio-Data Entry"}
+                    {isEditMode
+                      ? (isRTL ? "تعديل ملحق الرفع" : "Edit Lifting Accessory")
+                      : (isRTL ? "نموذج بيانات ملحق الرفع" : "Lifting Accessory Bio-Data Entry")}
                   </DialogTitle>
                 </DialogHeader>
                 
@@ -556,6 +750,26 @@ const LiftingTools = () => {
                           onChange={(e) => handleInputChange('vendor', e.target.value)}
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="project">{isRTL ? "المشروع *" : "Project *"}</Label>
+                      <Select
+                        value={formData.project || ""}
+                        onValueChange={(value) => handleInputChange('project', value)}
+                      >
+                        <SelectTrigger className={formErrors.project ? "border-red-500" : ""}>
+                          <SelectValue placeholder={isRTL ? "اختر المشروع" : "Select project"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Project A">Project A</SelectItem>
+                          <SelectItem value="Project B">Project B</SelectItem>
+                          <SelectItem value="Project C">Project C</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {formErrors.project && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.project}</p>
+                      )}
                     </div>
 
                     <div>
@@ -839,7 +1053,8 @@ const LiftingTools = () => {
                         storageLocation: "",
                         safetyColorCode: "",
                         status: "active",
-                        image: ""
+                        image: "",
+                        project: "Project A"
                       });
                       setImagePreview(null);
                       setFormErrors({});
@@ -850,12 +1065,179 @@ const LiftingTools = () => {
                     {isRTL ? "إلغاء" : "Cancel"}
                   </Button>
                   <Button onClick={handleSaveAccessory}>
-                    {isRTL ? "حفظ ملحق الرفع" : "Save Lifting Accessory"}
+                    {isEditMode
+                      ? (isRTL ? "تحديث الملحق" : "Update Accessory")
+                      : (isRTL ? "حفظ ملحق الرفع" : "Save Lifting Accessory")}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
+        </div>
+
+        {/* Project Tabs */}
+        <Tabs
+          value={selectedProject}
+          onValueChange={setSelectedProject}
+          className="w-full"
+        >
+          <TabsList className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
+            <TabsTrigger
+              value="Project A"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project A
+            </TabsTrigger>
+            <TabsTrigger
+              value="Project B"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project B
+            </TabsTrigger>
+            <TabsTrigger
+              value="Project C"
+              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow"
+            >
+              Project C
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Wrench className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    {isRTL ? "إجمالي الملحقات" : "Total Accessories"}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRTL ? "في المشروع الحالي" : "in current project"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    {isRTL ? "نشطة" : "Active"}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
+                  <p className="text-xs text-green-600 mt-1">
+                    {Math.round((stats.active / stats.total || 1) * 100)}% {isRTL ? "نشط" : "active"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <AlertTriangle className="h-8 w-8 text-yellow-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    {isRTL ? "تحت الفحص" : "Inspection"}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.inspection}</p>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    {Math.round((stats.inspection / stats.total || 1) * 100)}% {isRTL ? "فحص" : "inspection"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-purple-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    {isRTL ? "فحص مستحق" : "Due Inspection"}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.dueInspection}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRTL ? "الملحقات التي تحتاج إلى فحص" : "accessories needing inspection"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-sm text-gray-600">
+                  {isRTL ? "توزيع نوع الملحق" : "Accessory Type Distribution"}
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {Object.entries(stats.byType).map(([type, count]) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="text-sm">{type}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full bg-primary"
+                          style={{
+                            width: `${(count / stats.total || 1) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium">{count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-sm text-gray-600">
+                  {isRTL ? "حالة الشهادات" : "Certificate Status"}
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {isRTL ? "شهادات صالحة" : "Valid Certificates"}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {stats.total - stats.expiredCerts}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {isRTL ? "شهادات منتهية" : "Expired Certificates"}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {stats.expiredCerts}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Tips Section */}
@@ -1091,6 +1473,13 @@ const LiftingTools = () => {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={(e) => handleShareAccessory(accessory, e)}
+                              >
+                                <Share2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -1111,9 +1500,31 @@ const LiftingTools = () => {
                       <CardTitle>{selectedAccessory.accessoryName}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">ID: {selectedAccessory.accessoryId}</p>
                     </div>
-                    <Button variant="outline" onClick={() => setViewMode('list')}>
-                      {isRTL ? "عودة إلى القائمة" : "Back to List"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => handleShareAccessory(selectedAccessory, e)}
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        {isRTL ? "مشاركة" : "Share"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => handleEditAccessory(selectedAccessory, e)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        {isRTL ? "تعديل" : "Edit"}
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setViewMode('list');
+                        setActiveTab('list');
+                        setSelectedAccessory(null);
+                      }}>
+                        {isRTL ? "عودة إلى القائمة" : "Back to List"}
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1137,37 +1548,42 @@ const LiftingTools = () => {
                           <Label>{isRTL ? "الحمولة الآمنة" : "Safe Working Load"}</Label>
                           <p className="text-sm mt-1">{selectedAccessory.safeWorkingLoad}</p>
                         </div>
+                        <div>
+                          <Label>{isRTL ? "المشروع" : "Project"}</Label>
+                          <p className="text-sm mt-1">{selectedAccessory.project}</p>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="space-y-4">                      <h3 className="font-semibold">{isRTL ? "حالة التشغيل" : "Operational Status"}</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>{isRTL ? "الحالة" : "Status"}</Label>
-                            <Badge className={`mt-1 ${getStatusColor(selectedAccessory.status)}`}>
-                              {isRTL ? 
-                                (selectedAccessory.status === "active" ? "نشط" : 
-                                 selectedAccessory.status === "inspection" ? "تحت الفحص" : "غير نشط") 
-                                : selectedAccessory.status.charAt(0).toUpperCase() + selectedAccessory.status.slice(1)}
-                            </Badge>
-                          </div>
-                          <div>
-                            <Label>{isRTL ? "الموقع" : "Location"}</Label>
-                            <p className="text-sm mt-1">{selectedAccessory.assignedLocation}</p>
-                          </div>
-                          <div>
-                            <Label>{isRTL ? "المفتش" : "Inspector"}</Label>
-                            <p className="text-sm mt-1">{selectedAccessory.inspectorName || '-'}</p>
-                          </div>
-                          <div>
-                            <Label>{isRTL ? "آخر فحص" : "Last Inspection"}</Label>
-                            <p className="text-sm mt-1">
-                              {selectedAccessory.lastInspectionDate 
-                                ? format(selectedAccessory.lastInspectionDate, "PPP")
-                                : '-'}
-                            </p>
-                          </div>
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">{isRTL ? "حالة التشغيل" : "Operational Status"}</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>{isRTL ? "الحالة" : "Status"}</Label>
+                          <Badge className={`mt-1 ${getStatusColor(selectedAccessory.status)}`}>
+                            {isRTL ? 
+                              (selectedAccessory.status === "active" ? "نشط" : 
+                               selectedAccessory.status === "inspection" ? "تحت الفحص" : "غير نشط") 
+                              : selectedAccessory.status.charAt(0).toUpperCase() + selectedAccessory.status.slice(1)}
+                          </Badge>
                         </div>
+                        <div>
+                          <Label>{isRTL ? "الموقع" : "Location"}</Label>
+                          <p className="text-sm mt-1">{selectedAccessory.assignedLocation}</p>
+                        </div>
+                        <div>
+                          <Label>{isRTL ? "المفتش" : "Inspector"}</Label>
+                          <p className="text-sm mt-1">{selectedAccessory.inspectorName || '-'}</p>
+                        </div>
+                        <div>
+                          <Label>{isRTL ? "آخر فحص" : "Last Inspection"}</Label>
+                          <p className="text-sm mt-1">
+                            {selectedAccessory.lastInspectionDate 
+                              ? format(selectedAccessory.lastInspectionDate, "PPP")
+                              : '-'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -1186,7 +1602,8 @@ const LiftingTools = () => {
               <CardHeader>
                 <CardTitle>{isRTL ? "إنشاء التقارير" : "Generate Reports"}</CardTitle>
               </CardHeader>
-              <CardContent>                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <Button variant="outline" className="h-24 flex flex-col items-center justify-center">
                     <FileText className="h-6 w-6 mb-2" />
                     <span>{isRTL ? "تقرير الفحص الدوري" : "Periodic Inspection Report"}</span>
@@ -1195,7 +1612,7 @@ const LiftingTools = () => {
                     <Clock className="h-6 w-6 mb-2" />
                     <span>{isRTL ? "تقرير الفحص المستحق" : "Due Inspection Report"}</span>
                   </Button>
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center">
+                  <Button variant="outline" className="                  h-24 flex flex-col items-center justify-center">
                     <AlertTriangle className="h-6 w-6 mb-2" />
                     <span>{isRTL ? "تقرير الصيانة" : "Maintenance Report"}</span>
                   </Button>
@@ -1213,7 +1630,7 @@ const LiftingTools = () => {
         <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
           <DialogContent className="max-w-3xl h-auto">
             <DialogHeader>
-              <DialogTitle>{isRTL ? "معاينة الصورة" : "Image Preview"} </DialogTitle>
+              <DialogTitle>{isRTL ? "معاينة الصورة" : "Image Preview"}</DialogTitle>
             </DialogHeader>
             {selectedImage && (
               <div className="relative aspect-video">
@@ -1226,6 +1643,16 @@ const LiftingTools = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Share Accessory Modal */}
+        <ShareAccessoryModal
+          open={isShareModalOpen}
+          onOpenChange={setIsShareModalOpen}
+          accessory={selectedAccessory}
+          onShare={handleShare}
+          loading={false}
+          isRTL={isRTL}
+        />
       </div>
     </DashboardLayout>
   );
