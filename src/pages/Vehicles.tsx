@@ -53,6 +53,8 @@ interface Vehicle {
     issuedBy: string;
   }>;
   project: string;
+  dailyInspections?: Array<import("@/types/vehicleInspection").VehicleDailyInspection>;
+  monthlyInspections?: Array<import("@/types/vehicleInspection").VehicleMonthlyInspection>;
 }
 
 const SAMPLE_VEHICLES: Vehicle[] = [
