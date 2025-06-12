@@ -1,330 +1,48 @@
-import { useState, useRef, useEffect } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle ,CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useLanguage } from "@/hooks/use-language";
-import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useRef, useState } from 'react';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { useLanguage } from '@/hooks/use-language';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 import { 
-  Calendar as CalendarIcon, 
-  Plus, 
-  Search, 
-  Filter, 
-  Download, 
-  Upload, 
-  Wrench, 
+  AlertCircle, 
   AlertTriangle, 
+  Calendar as CalendarIcon, 
   CheckCircle, 
   Clock, 
-  User, 
-  MapPin, 
-  FileText, 
-  Settings, 
-  Camera,
-  Lightbulb,
-  Video,
-  Eye,
-  Edit,
-  Trash2,
+  Download, 
+  Edit, 
+  Plus, 
+  Share2, 
+  Clipboard, 
+  CalendarCheck,
   X,
-  Image as ImageIcon,
-  Share2
-} from "lucide-react";
-import { format } from "date-fns";
-
-// Enhanced Equipment interface with bio-data fields
-interface PowerTool {
-  id: string;
-  toolName: string;
-  toolId: string;
-  toolType: string;
-  manufacturer: string;
-  modelNumber: string;
-  powerRating: string;
-  toolSize: string;
-  weight: string;
-  purchaseDate: Date | null;
-  vendor: string;
-  condition: 'new' | 'good' | 'maintenance' | 'damaged';
-  assignedLocation: string;
-  assignedTo: string;
-  certificateNo: string;
-  certificateIssueDate: Date | null;
-  certificateExpiryDate: Date | null;
-  nextCalibrationDue: Date | null;
-  inspectionFrequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
-  lastInspectionDate: Date | null;
-  inspectionStatus: 'passed' | 'needs-service' | 'failed';
-  remarks: string;
-  operatorLicenseRequired: boolean;
-  operatorName: string;
-  storageLocation: string;
-  safetyAccessories: string;
-  status: 'active' | 'maintenance' | 'inactive';
-  image?: string;
-  project: string; // Added project field
-}
-
-
-// Sample data with enhanced bio-data
-const SAMPLE_POWER_TOOLS: PowerTool[] = [
-  {
-    id: "PT-00126",
-    toolName: "Reciprocating Saw",
-    toolId: "PT-00126",
-    toolType: "electric",
-    manufacturer: "dewalt",
-    modelNumber: "DWE305",
-    powerRating: "1100W",
-    toolSize: "12\" blade",
-    weight: "3.5 kg",
-    purchaseDate: new Date("2023-08-15"),
-    vendor: "Al Madina Hardware",
-    condition: "good",
-    assignedLocation: "Site B",
-    assignedTo: "Construction Team",
-    certificateNo: "TPI-POW-9880",
-    certificateIssueDate: new Date("2024-08-15"),
-    certificateExpiryDate: new Date("2025-08-15"),
-    nextCalibrationDue: new Date("2024-12-15"),
-    inspectionFrequency: "monthly",
-    lastInspectionDate: new Date("2025-05-15"),
-    inspectionStatus: "passed",
-    remarks: "Regular maintenance performed",
-    operatorLicenseRequired: true,
-    operatorName: "John Smith",
-    storageLocation: "Tool Cabinet 3",
-    safetyAccessories: "Safety Glasses, Hearing Protection",
-    status: "active",
-    project: "Project A",
-    image: "/images/Reciprocating Saw.jpg"
-  },
-  {
-    id: "PT-00127",
-    toolName: "Table Saw",
-    toolId: "PT-00127",
-    toolType: "electric",
-    manufacturer: "bosch",
-    modelNumber: "GTS10J",
-    powerRating: "1800W",
-    toolSize: "10\" blade",
-    weight: "26 kg",
-    purchaseDate: new Date("2023-09-20"),
-    vendor: "Al-Futtaim Tools",
-    condition: "good",
-    assignedLocation: "Workshop B",
-    assignedTo: "Carpentry Team",
-    certificateNo: "TPI-POW-9881",
-    certificateIssueDate: new Date("2024-09-20"),
-    certificateExpiryDate: new Date("2025-09-20"),
-    nextCalibrationDue: new Date("2024-11-20"),
-    inspectionFrequency: "weekly",
-    lastInspectionDate: new Date("2025-06-01"),
-    inspectionStatus: "passed",
-    remarks: "New blade installed",
-    operatorLicenseRequired: true,
-    operatorName: "Mike Wilson",
-    storageLocation: "Workshop Storage",
-    safetyAccessories: "Push Stick, Safety Guard, Safety Glasses",
-    status: "active",
-    project: "Project B",
-    image: "/images/Table Saw.jpg"
-  },
-  {
-    id: "PT-00128",
-    toolName: "Angle Grinder",
-    toolId: "PT-00128",
-    toolType: "electric",
-    manufacturer: "makita",
-    modelNumber: "GA5030R",
-    powerRating: "720W",
-    toolSize: "5\" disc",
-    weight: "1.8 kg",
-    purchaseDate: new Date("2023-10-05"),
-    vendor: "Al Madina Hardware",
-    condition: "maintenance",
-    assignedLocation: "Site C",
-    assignedTo: "Maintenance Team",
-    certificateNo: "TPI-POW-9882",
-    certificateIssueDate: new Date("2024-10-05"),
-    certificateExpiryDate: new Date("2025-10-05"),
-    nextCalibrationDue: new Date("2024-12-05"),
-    inspectionFrequency: "monthly",
-    lastInspectionDate: new Date("2025-05-30"),
-    inspectionStatus: "needs-service",
-    remarks: "Requires disc replacement",
-    operatorLicenseRequired: true,
-    operatorName: "Sara Khan",
-    storageLocation: "Tool Room 1",
-    safetyAccessories: "Face Shield, Gloves, Dust Mask",
-    status: "maintenance",
-    project: "Project C",
-    image: "/images/Angle Grinder.jpg"
-  },
-  {
-    id: "PT-00129",
-    toolName: "Jigsaw",
-    toolId: "PT-00129",
-    toolType: "electric",
-    manufacturer: "milwaukee",
-    modelNumber: "M18FJS",
-    powerRating: "18V",
-    toolSize: "T-shank",
-    weight: "2.4 kg",
-    purchaseDate: new Date("2023-11-15"),
-    vendor: "Al-Futtaim Tools",
-    condition: "good",
-    assignedLocation: "Site A",
-    assignedTo: "Finishing Team",
-    certificateNo: "TPI-POW-9883",
-    certificateIssueDate: new Date("2024-11-15"),
-    certificateExpiryDate: new Date("2025-11-15"),
-    nextCalibrationDue: new Date("2024-12-15"),
-    inspectionFrequency: "monthly",
-    lastInspectionDate: new Date("2025-05-25"),
-    inspectionStatus: "passed",
-    remarks: "Battery in good condition",
-    operatorLicenseRequired: false,
-    operatorName: "Ali Hassan",
-    storageLocation: "Tool Cabinet 4",
-    safetyAccessories: "Safety Glasses, Dust Collection",
-    status: "active",
-    project: "Project A",
-    image: "/images/jigsaw.jpeg"
-  },
-  {
-    id: "PT-00130",
-    toolName: "Circular Saw",
-    toolId: "PT-00130",
-    toolType: "electric",
-    manufacturer: "dewalt",
-    modelNumber: "DCS573",
-    powerRating: "20V",
-    toolSize: "7-1/4\" blade",
-    weight: "3.7 kg",
-    purchaseDate: new Date("2023-12-01"),
-    vendor: "Al Madina Hardware",
-    condition: "new",
-    assignedLocation: "Site D",
-    assignedTo: "Construction Team",
-    certificateNo: "TPI-POW-9884",
-    certificateIssueDate: new Date("2024-12-01"),
-    certificateExpiryDate: new Date("2025-12-01"),
-    nextCalibrationDue: new Date("2024-11-01"),
-    inspectionFrequency: "weekly",
-    lastInspectionDate: new Date("2025-06-01"),
-    inspectionStatus: "passed",
-    remarks: "New tool, excellent condition",
-    operatorLicenseRequired: true,
-    operatorName: "Robert Chen",
-    storageLocation: "Tool Room 2",
-    safetyAccessories: "Safety Glasses, Hearing Protection, Dust Mask",
-    status: "active",
-    project: "Project B",
-    image: "/images/circular saw.jpg"
-  },
-  {
-    id: "PT-00123",
-    toolName: "Angle Grinder",
-    toolId: "PT-00123",
-    toolType: "electric",
-    manufacturer: "bosch",
-    modelNumber: "GWS 750-100",
-    powerRating: "750W",
-    toolSize: "4\" disc",
-    weight: "2.5 kg",
-    purchaseDate: new Date("2023-02-14"),
-    vendor: "Al-Futtaim Tools",
-    condition: "good",
-    assignedLocation: "Workshop A",
-    assignedTo: "Mr. Ali",
-    certificateNo: "TPI-POW-9876",
-    certificateIssueDate: new Date("2024-06-01"),
-    certificateExpiryDate: new Date("2025-05-31"),
-    nextCalibrationDue: new Date("2025-01-01"),
-    inspectionFrequency: "weekly",
-    lastInspectionDate: new Date("2025-06-01"),
-    inspectionStatus: "passed",
-    remarks: "Blade to be replaced soon",
-    operatorLicenseRequired: true,
-    operatorName: "Javed Iqbal",
-    storageLocation: "Tool Cabinet 2",
-    safetyAccessories: "Gloves, Goggles, Ear Protection",
-    status: "active",
-    project: "Project A",
-    image: "/images/Angle Grinder.jpg"
-  },
-  {
-    id: "PT-00124",
-    toolName: "Hammer Drill",
-    toolId: "PT-00124",
-    toolType: "battery",
-    manufacturer: "makita",
-    modelNumber: "DCD996",
-    powerRating: "18V",
-    toolSize: "13mm chuck",
-    weight: "1.8 kg",
-    purchaseDate: new Date("2023-03-20"),
-    vendor: "Al Madina Hardware",
-    condition: "new",
-    assignedLocation: "Site A",
-    assignedTo: "Mechanical Dept",
-    certificateNo: "TPI-POW-9877",
-    certificateIssueDate: new Date("2024-07-15"),
-    certificateExpiryDate: new Date("2025-07-15"),
-    nextCalibrationDue: null,
-    inspectionFrequency: "monthly",
-    lastInspectionDate: new Date("2025-05-28"),
-    inspectionStatus: "passed",
-    remarks: "Battery backup excellent",
-    operatorLicenseRequired: false,
-    operatorName: "",
-    storageLocation: "Store Room B",
-    safetyAccessories: "Safety Glasses, Work Gloves",
-    status: "active",
-    project: "Project B",
-    image: "/images/circular saw.jpg"
-  },
-  {
-    id: "PT-00125",
-    toolName: "Impact Wrench",
-    toolId: "PT-00125",
-    toolType: "pneumatic",
-    manufacturer: "dewalt",
-    modelNumber: "HR2470",
-    powerRating: "2.5 HP",
-    toolSize: "1/2\" drive",
-    weight: "3.2 kg",
-    purchaseDate: new Date("2023-01-10"),
-    vendor: "Al-Futtaim Tools",
-    condition: "maintenance",
-    assignedLocation: "Project Falcon",
-    assignedTo: "Store Keeper",
-    certificateNo: "TPI-POW-9875",
-    certificateIssueDate: new Date("2024-04-30"),
-    certificateExpiryDate: new Date("2025-04-30"),
-    nextCalibrationDue: new Date("2024-12-01"),
-    inspectionFrequency: "weekly",
-    lastInspectionDate: new Date("2025-05-20"),
-    inspectionStatus: "needs-service",
-    remarks: "Air hose connection loose, requires maintenance",
-    operatorLicenseRequired: true,
-    operatorName: "Ahmed Hassan",
-    storageLocation: "Tool Cabinet 1",
-    safetyAccessories: "Ear Protection, Safety Glasses",
-    status: "maintenance",
-    project: "Project C",
-    image: "/images/jigsaw.jpg"
-  }
-];
+  Camera,
+  Wrench,
+  Lightbulb,
+  FileText,
+  Eye,
+  Search,
+  Filter,
+  ImageIcon,
+  MapPin,
+  User,
+} from 'lucide-react';
+import { PowerToolDailyChecklistDialog } from '@/components/power-tools/PowerToolDailyChecklistDialog';
+import { PowerToolMonthlyInspectionDialog } from '@/components/power-tools/PowerToolMonthlyInspectionDialog';
+import { SAMPLE_POWER_TOOLS } from '@/data/sample-power-tools';
+import type { DailyInspection, MonthlyInspection } from '@/types/inspection';
+import type { PowerTool } from '@/types/power-tools';
 
 // ShareToolModal component
 const ShareToolModal = ({
@@ -416,7 +134,7 @@ const ShareToolModal = ({
                 id="share-link"
                 value={shareLink}
                 readOnly
-                onClick={(e) => e.target.select()}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
               />
               <Button
                 variant="outline"
@@ -453,6 +171,33 @@ const ShareToolModal = ({
   );
 };
 
+// Move this function outside the component or into a proper scope
+const getNextInspectionDate = (nextInspection: Date) => {
+  return nextInspection.toLocaleDateString();
+};
+
+// Helper functions for inspection validation
+const isInspectionDue = (tool: PowerTool) => {
+  if (!tool.lastInspectionDate) return true;
+
+  const today = new Date();
+  const lastInspection = new Date(tool.lastInspectionDate);
+  const daysSinceLastInspection = Math.floor((today.getTime() - lastInspection.getTime()) / (1000 * 60 * 60 * 24));
+
+  switch (tool.inspectionFrequency) {
+    case 'daily':
+      return daysSinceLastInspection >= 1;
+    case 'weekly':
+      return daysSinceLastInspection >= 7;
+    case 'monthly':
+      return daysSinceLastInspection >= 30;
+    case 'quarterly':
+      return daysSinceLastInspection >= 90;
+    default:
+      return true;
+  }
+};
+
 const PowerTools = () => {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
@@ -462,6 +207,8 @@ const PowerTools = () => {
   const [activeTab, setActiveTab] = useState("list");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [dailyInspectionOpen, setDailyInspectionOpen] = useState(false);
+  const [monthlyInspectionOpen, setMonthlyInspectionOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedTool, setSelectedTool] = useState<PowerTool | null>(null);
@@ -742,7 +489,6 @@ const PowerTools = () => {
       </PopoverContent>
     </Popover>
   );
-
   // Add image preview handler
   const handleImagePreview = (imageUrl: string | undefined, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -750,6 +496,182 @@ const PowerTools = () => {
       setSelectedImage(imageUrl);
       setShowImageDialog(true);
     }
+  };
+
+  const handleDailyInspectionSubmit = async (inspection: DailyInspection) => {
+    try {
+      if (!selectedTool || !isInspectionDue(selectedTool)) {
+        const nextDate = getNextRequiredInspectionDate(selectedTool!);
+        toast({
+          title: isRTL ? "تنبيه" : "Warning", 
+          description: isRTL ? `الفحص التالي مستحق في ${nextDate}` : `Next inspection is due on ${nextDate}`,
+          variant: "warning"
+        });
+        return;
+      }
+
+      const updatedTools = tools.map(tool => {
+        if (tool.id === selectedTool?.id) {
+          const updatedInspection = {
+            ...inspection,
+            equipmentId: tool.id,
+            toolName: tool.toolName,
+            serialNumber: tool.toolId,
+            manufacturer: tool.manufacturer,
+            modelNumber: tool.modelNumber,
+            operatorId: 'current-user-id',  
+          };
+          
+          const updatedInspections = [...(tool.dailyInspections || []), updatedInspection];
+          const failedItems = inspection.items.filter(item => item.status === 'failed').length;
+          const notCheckedItems = inspection.items.filter(item => item.status === 'not-checked').length;
+          
+          const inspectionStatus = notCheckedItems > 0 ? 'needs-service' : 
+                                 failedItems > 0 ? 'failed' : 'passed';
+
+          return {
+            ...tool,
+            dailyInspections: updatedInspections,
+            lastInspectionDate: new Date(),
+            inspectionStatus
+          };
+        }
+        return tool;
+      });
+
+      setTools(updatedTools);
+      setDailyInspectionOpen(false);
+      toast({
+        title: isRTL ? "نجاح" : "Success",
+        description: isRTL ? "تم حفظ الفحص اليومي بنجاح" : "Daily inspection saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving daily inspection:', error);
+      toast({
+        title: isRTL ? "خطأ" : "Error",
+        description: isRTL ? "حدث خطأ أثناء حفظ الفحص" : "Error saving inspection",
+        variant: "destructive"
+      });
+    }
+  };  const handleMonthlyInspectionSubmit = async (inspection: MonthlyInspection) => {
+    try {
+      // Validate if inspection is due
+      if (!selectedTool || !isInspectionDue(selectedTool)) {
+        const nextDate = getNextRequiredInspectionDate(selectedTool!);
+        toast({
+          title: isRTL ? "تنبيه" : "Warning",
+          description: isRTL 
+            ? `الفحص التالي مستحق في ${nextDate}`
+            : `Next inspection is due on ${nextDate}`,
+          variant: "warning"
+        });
+        return;
+      }
+
+      // Update the tool with the new monthly inspection
+      const updatedTools = tools.map(tool => {
+        if (tool.id === selectedTool?.id) {
+          const monthlyInspections = tool.monthlyInspections || [];
+          // Add the new inspection with tool details
+          const updatedInspection = {
+            ...inspection,
+            equipmentId: tool.id,
+            toolName: tool.toolName,
+            serialNumber: tool.toolId,
+            manufacturer: tool.manufacturer,
+            modelNumber: tool.modelNumber,
+            technicianName: 'Current Technician', // This should come from auth context
+            technicianId: 'current-user-id', // This should come from auth context
+          };
+          
+          const updatedInspections = [...monthlyInspections, updatedInspection];
+
+          // Determine inspection status based on results
+          const failedItems = inspection.items.filter(item => item.status === 'failed').length;
+          const notCheckedItems = inspection.items.filter(item => item.status === 'not-checked').length;
+          
+          let inspectionStatus: 'passed' | 'needs-service' | 'failed';
+          if (notCheckedItems > 0) {
+            inspectionStatus = 'needs-service';
+          } else if (failedItems > 0) {
+            inspectionStatus = 'failed';
+          } else {
+            inspectionStatus = 'passed';
+          }
+
+          // Update tool with inspection results and dates
+          return {
+            ...tool,
+            monthlyInspections: updatedInspections,
+            lastInspectionDate: new Date(),
+            nextCalibrationDue: new Date(inspection.nextInspectionDate),
+            inspectionStatus
+          };
+        }
+        return tool;
+      });
+      setTools(updatedTools);
+      setMonthlyInspectionOpen(false);
+      toast({
+        title: isRTL ? "نجاح" : "Success",
+        description: isRTL ? "تم حفظ الفحص الشهري بنجاح" : "Monthly inspection saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving monthly inspection:', error);
+      toast({
+        title: isRTL ? "خطأ" : "Error",
+        description: isRTL ? "حدث خطأ أثناء حفظ الفحص" : "Error saving inspection",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Helper functions for inspection validation
+  const isInspectionDue = (tool: PowerTool) => {
+    if (!tool.lastInspectionDate) return true;
+
+    const today = new Date();
+    const lastInspection = new Date(tool.lastInspectionDate);
+    const daysSinceLastInspection = Math.floor((today.getTime() - lastInspection.getTime()) / (1000 * 60 * 60 * 24));
+
+    switch (tool.inspectionFrequency) {
+      case 'daily':
+        return daysSinceLastInspection >= 1;
+      case 'weekly':
+        return daysSinceLastInspection >= 7;
+      case 'monthly':
+        return daysSinceLastInspection >= 30;
+      case 'quarterly':
+        return daysSinceLastInspection >= 90;
+      default:
+        return true;
+    }
+  };
+
+  const getNextRequiredInspectionDate = (tool: PowerTool) => {
+    if (!tool.lastInspectionDate) return 'Immediate inspection required';
+
+    const lastInspection = new Date(tool.lastInspectionDate);
+    let nextInspection: Date;
+
+    switch (tool.inspectionFrequency) {
+      case 'daily':
+        nextInspection = new Date(lastInspection.setDate(lastInspection.getDate() + 1));
+        break;
+      case 'weekly':
+        nextInspection = new Date(lastInspection.setDate(lastInspection.getDate() + 7));
+        break;
+      case 'monthly':
+        nextInspection = new Date(lastInspection.setMonth(lastInspection.getMonth() + 1));
+        break;
+      case 'quarterly':
+        nextInspection = new Date(lastInspection.setMonth(lastInspection.getMonth() + 3));
+        break;
+      default:
+        return 'Invalid inspection frequency';
+    }
+
+    return nextInspection.toLocaleDateString();
   };
 
   return (
@@ -811,7 +733,7 @@ const PowerTools = () => {
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="toolId">{isRTL ? "رقم الأداة / الرقم التسلسلي *" : "Tool ID / Serial Number *"}</Label>
+                        <Label htmlFor="toolId">{isRTL ? "رقم الأداة مطلوب" : "Tool ID is required"}</Label>
                         <Input
                           id="toolId"
                           placeholder={isRTL ? "مثال: PT-00123, SN-87654321" : "e.g., PT-00123, SN-87654321"}
@@ -829,10 +751,18 @@ const PowerTools = () => {
                             <SelectValue placeholder={isRTL ? "اختر نوع الأداة" : "Select tool type"} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="electric">{isRTL ? "كهربائية" : "Electric"}</SelectItem>
-                            <SelectItem value="battery">{isRTL ? "تعمل بالبطارية" : "Battery-Operated"}</SelectItem>
-                            <SelectItem value="pneumatic">{isRTL ? "هوائية" : "Pneumatic"}</SelectItem>
-                            <SelectItem value="manual">{isRTL ? "يدوية" : "Manual"}</SelectItem>
+                            <SelectItem value="electric">
+                              {isRTL ? "كهربائي" : "Electric"}
+                            </SelectItem>
+                            <SelectItem value="battery">
+                              {isRTL ? "بطارية" : "Battery"}
+                            </SelectItem>
+                            <SelectItem value="pneumatic">
+                              {isRTL ? "هوائي" : "Pneumatic"}
+                            </SelectItem>
+                            <SelectItem value="hydraulic">
+                              {isRTL ? "هيدروليكي" : "Hydraulic"}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         {formErrors.toolType && (
@@ -846,11 +776,21 @@ const PowerTools = () => {
                             <SelectValue placeholder={isRTL ? "اختر الشركة المصنعة" : "Select manufacturer"} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="bosch">Bosch</SelectItem>
-                            <SelectItem value="makita">Makita</SelectItem>
-                            <SelectItem value="dewalt">DeWalt</SelectItem>
-                            <SelectItem value="hilti">Hilti</SelectItem>
-                            <SelectItem value="milwaukee">Milwaukee</SelectItem>
+                            <SelectItem value="dewalt">
+                              {isRTL ? "ديوالت" : "DeWalt"}
+                            </SelectItem>
+                            <SelectItem value="makita">
+                              {isRTL ? "ماكيتا" : "Makita"}
+                            </SelectItem>
+                            <SelectItem value="bosch">
+                              {isRTL ? "بوش" : "Bosch"}
+                            </SelectItem>
+                            <SelectItem value="milwaukee">
+                              {isRTL ? "ميلواكي" : "Milwaukee"}
+                            </SelectItem>
+                            <SelectItem value="hilti">
+                              {isRTL ? "هيلتي" : "Hilti"}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         {formErrors.manufacturer && (
@@ -1547,7 +1487,7 @@ const PowerTools = () => {
             <h3 className="text-sm font-medium truncate">Reciprocating Saw</h3>
           </div>
         </div>
-      </div>
+           </div>
 
       {/* Jigsaw */}
       <div
@@ -1667,8 +1607,8 @@ const PowerTools = () => {
                               >
                                 {tool.image ? (
                                   <img 
-                                    src={tool.image} 
-                                    alt={tool.toolName} 
+                                    src={tool.image}
+                                    alt={tool.toolName}
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
@@ -1683,16 +1623,20 @@ const PowerTools = () => {
                                   <span>ID: {tool.toolId}</span>
                                   <span className="text-gray-300">•</span>
                                   <span>{tool.manufacturer}</span>
-                                </div>
+                                                               </div>
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-4">
                             <div>
-                              <Badge variant="outline" className="mb-2">{tool.toolType}</Badge>
-                              <div className="text-sm text-gray-600">
+                              <Badge variant="outline" className="mb-2">{tool.toolType}</Badge>                              <div className="text-sm text-gray-600">
                                 {isRTL ? "آخر فحص: " : "Last Inspection: "} 
                                 {tool.lastInspectionDate ? format(tool.lastInspectionDate, "PPP") : "-"}
+                                {isInspectionDue(tool) && (
+                                  <Badge variant="warning" className="ml-2">
+                                    {isRTL ? "فحص مستحق" : "Inspection Due"}
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -1760,7 +1704,7 @@ const PowerTools = () => {
                                 onClick={(e) => handleShareTool(tool, e)}
                               >
                                 <Share2 className="h-4 w-4" />
-                              </Button>
+                                                           </Button>
                             </div>
                           </td>
                         </tr>
@@ -1782,6 +1726,22 @@ const PowerTools = () => {
                       <p className="text-sm text-muted-foreground mt-1">ID: {selectedTool.toolId}</p>
                     </div>
                     <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setDailyInspectionOpen(true)}
+                      >
+                        <Clipboard className="h-4 w-4 mr-2" />
+                        {isRTL ? "الفحص اليومي" : "Daily Check"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setMonthlyInspectionOpen(true)}
+                      >
+                        <CalendarCheck className="h-4 w-4 mr-2" />
+                        {isRTL ? "الفحص الشهري" : "Monthly Check"}
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -1910,20 +1870,21 @@ const PowerTools = () => {
             <DialogHeader>
               <DialogTitle>{isRTL ? "معاينة الصورة" : "Image Preview"}</DialogTitle>
             </DialogHeader>
-            {selectedImage && (
-              <div className="relative aspect-video">
-                <img
-                  src={selectedImage}
-                  alt="Tool preview"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            )}
+            <div role="img" aria-label="Tool preview">
+              {selectedImage && (
+                <div className="relative aspect-video">
+                  <img
+                    src={selectedImage}
+                    alt="Tool preview"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
 
-        {/* Share Tool Modal */}
-        <ShareToolModal
+        {/* Share Tool Modal */}        <ShareToolModal
           open={isShareModalOpen}
           onOpenChange={setIsShareModalOpen}
           tool={selectedTool}
@@ -1931,6 +1892,22 @@ const PowerTools = () => {
           loading={false}
           isRTL={isRTL}
         />
+
+        {selectedTool && (
+          <>            <PowerToolDailyChecklistDialog
+              powerTool={selectedTool}
+              open={dailyInspectionOpen}
+              onOpenChange={setDailyInspectionOpen}
+              onSubmit={handleDailyInspectionSubmit}
+            />
+            <PowerToolMonthlyInspectionDialog
+              powerTool={selectedTool}
+              open={monthlyInspectionOpen}
+              onOpenChange={setMonthlyInspectionOpen}
+              onSubmit={handleMonthlyInspectionSubmit}
+            />
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
