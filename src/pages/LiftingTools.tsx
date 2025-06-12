@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle,CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,95 +77,157 @@ interface LiftingAccessory {
 const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
   {
     id: "LA-00124",
-    accessoryName: "Wire Rope Sling",
-    accessoryId: "WRS-0044",
-    accessoryType: "sling",
-    manufacturer: "Crosby",
-    modelNumber: "G-2160",
-    safeWorkingLoad: "3T",
-    sizeDimensions: "Ø16mm x 3m",
-    weight: "2.5 kg",
-    purchaseDate: new Date("2024-02-15"),
-    vendor: "SafeLift Equipment",
+    accessoryName: "Electric Chain Hoist",
+    accessoryId: "ECH-001",
+    accessoryType: "hoist",
+    manufacturer: "KITO",
+    modelNumber: "ER2-003S",
+    safeWorkingLoad: "2T",
+    sizeDimensions: "480 x 310 x 345mm",
+    weight: "45 kg",
+    purchaseDate: new Date("2024-01-15"),
+    vendor: "Industrial Equipment Co.",
     condition: "new",
-    assignedLocation: "Main Store",
-    assignedTo: "Lifting Team",
-    certificateNo: "TPI-LA-2024-100",
-    certificateIssueDate: new Date("2024-03-01"),
-    certificateExpiryDate: new Date("2025-03-01"),
-    nextInspectionDue: new Date("2024-09-01"),
+    assignedLocation: "Workshop Bay 1",
+    assignedTo: "Maintenance Team",
+    certificateNo: "CERT-ECH-2024-001",
+    certificateIssueDate: new Date("2024-01-20"),
+    certificateExpiryDate: new Date("2025-01-20"),
+    nextInspectionDue: new Date("2024-07-20"),
     inspectionFrequency: "6 months",
-    lastInspectionDate: new Date("2024-03-01"),
+    lastInspectionDate: new Date("2024-01-20"),
     inspectionStatus: "passed",
-    remarks: "Regular inspection required",
+    remarks: "Regular maintenance required every 500 operating hours",
     safetyCertified: true,
-    inspectorName: "Ahmed Hassan",
-    storageLocation: "Site B",
+    inspectorName: "Mohammed Saleem",
+    storageLocation: "Main Workshop",
     safetyColorCode: "green",
-    status: "inspection",
-    image: "",
+    status: "active",
+    image: "/images/Electric chain hoist.jpg",
     project: "Project A"
   },
   {
     id: "LA-00125",
-    accessoryName: "D-Shackle",
-    accessoryId: "DSH-0045",
-    accessoryType: "shackle",
-    manufacturer: "Green Pin",
-    modelNumber: "G-4163",
-    safeWorkingLoad: "4.75T",
-    sizeDimensions: "Ø19mm",
-    weight: "0.6 kg",
-    purchaseDate: new Date("2024-01-20"),
-    vendor: "TechLift Supplies",
+    accessoryName: "Lever Hoist",
+    accessoryId: "LH-002",
+    accessoryType: "hoist",
+    manufacturer: "Yale",
+    modelNumber: "YL-500",
+    safeWorkingLoad: "500kg",
+    sizeDimensions: "280 x 150 x 160mm",
+    weight: "3.8 kg",
+    purchaseDate: new Date("2024-02-01"),
+    vendor: "Safety Lift Equipment",
     condition: "new",
-    assignedLocation: "Crane No. 2",
-    assignedTo: "Lifting Team",
-    certificateNo: "TPI-LA-2024-101",
-    certificateIssueDate: new Date("2024-02-01"),
-    certificateExpiryDate: new Date("2025-02-01"),
-    nextInspectionDue: new Date("2024-11-01"),
+    assignedLocation: "Storage Area B",
+    assignedTo: "Rigging Team",
+    certificateNo: "CERT-LH-2024-002",
+    certificateIssueDate: new Date("2024-02-05"),
+    certificateExpiryDate: new Date("2025-02-05"),
+    nextInspectionDue: new Date("2024-08-05"),
     inspectionFrequency: "6 months",
-    lastInspectionDate: new Date("2024-05-01"),
+    lastInspectionDate: new Date("2024-02-05"),
     inspectionStatus: "passed",
-    remarks: "No issues reported",
+    remarks: "Annual load testing required",
     safetyCertified: true,
-    inspectorName: "Khalid Omar",
-    storageLocation: "Tool Cabinet 1",
+    inspectorName: "Ahmad Khan",
+    storageLocation: "Tool Room 2",
     safetyColorCode: "blue",
     status: "active",
-    image: "",
-    project: "Project B"
+    image: "/images/Lever Hoist.jpg",
+    project: "Project A"
   },
   {
     id: "LA-00126",
-    accessoryName: "Chain Sling",
-    accessoryId: "CSL-0046",
-    accessoryType: "sling",
-    manufacturer: "Yoke",
-    modelNumber: "YCS-100",
-    safeWorkingLoad: "5T",
-    sizeDimensions: "Ø22mm x 4m",
-    weight: "8.2 kg",
-    purchaseDate: new Date("2023-12-10"),
-    vendor: "LiftPro Equipment",
-    condition: "good",
-    assignedLocation: "Site C",
-    assignedTo: "Rigging Crew",
-    certificateNo: "TPI-LA-2024-102",
-    certificateIssueDate: new Date("2024-01-15"),
-    certificateExpiryDate: new Date("2025-01-15"),
-    nextInspectionDue: new Date("2024-10-15"),
+    accessoryName: "Hydraulic Jack",
+    accessoryId: "HJ-003",
+    accessoryType: "jack",
+    manufacturer: "Powerbuilt",
+    modelNumber: "HJ-20T",
+    safeWorkingLoad: "20T",
+    sizeDimensions: "250 x 150 x 160mm",
+    weight: "12.5 kg",
+    purchaseDate: new Date("2024-03-10"),
+    vendor: "Heavy Equipment Solutions",
+    condition: "new",
+    assignedLocation: "Maintenance Bay",
+    assignedTo: "Service Team",
+    certificateNo: "CERT-HJ-2024-003",
+    certificateIssueDate: new Date("2024-03-15"),
+    certificateExpiryDate: new Date("2025-03-15"),
+    nextInspectionDue: new Date("2024-09-15"),
     inspectionFrequency: "6 months",
-    lastInspectionDate: new Date("2024-04-15"),
+    lastInspectionDate: new Date("2024-03-15"),
     inspectionStatus: "passed",
-    remarks: "Minor wear, monitor closely",
+    remarks: "Check hydraulic oil level monthly",
     safetyCertified: true,
-    inspectorName: "Mohammed Ali",
-    storageLocation: "Storage Bay 2",
+    inspectorName: "Rashid Ali",
+    storageLocation: "Equipment Room",
     safetyColorCode: "yellow",
     status: "active",
-    image: "",
+    image: "/images/Hydraulic Jack.jpg",
+    project: "Project B"
+  },
+  {
+    id: "LA-00127",
+    accessoryName: "Hydraulic Lifting Table",
+    accessoryId: "HLT-004",
+    accessoryType: "lifting-table",
+    manufacturer: "Bishamon",
+    modelNumber: "EX-1000",
+    safeWorkingLoad: "1000kg",
+    sizeDimensions: "1220 x 610mm",
+    weight: "125 kg",
+    purchaseDate: new Date("2024-04-01"),
+    vendor: "Industrial Solutions Co.",
+    condition: "new",
+    assignedLocation: "Assembly Area",
+    assignedTo: "Production Team",
+    certificateNo: "CERT-HLT-2024-004",
+    certificateIssueDate: new Date("2024-04-05"),
+    certificateExpiryDate: new Date("2025-04-05"),
+    nextInspectionDue: new Date("2024-10-05"),
+    inspectionFrequency: "6 months",
+    lastInspectionDate: new Date("2024-04-05"),
+    inspectionStatus: "passed",
+    remarks: "Weekly cleaning and lubrication required",
+    safetyCertified: true,
+    inspectorName: "Farhan Ahmed",
+    storageLocation: "Workshop Area 3",
+    safetyColorCode: "green",
+    status: "active",
+    image: "/images/Hydraulic Lifting Table.jpg",
+    project: "Project B"
+  },
+  {
+    id: "LA-00128",
+    accessoryName: "Hand Winch",
+    accessoryId: "HW-005",
+    accessoryType: "winch",
+    manufacturer: "Tractel",
+    modelNumber: "T-508D",
+    safeWorkingLoad: "800kg",
+    sizeDimensions: "320 x 200 x 180mm",
+    weight: "5.6 kg",
+    purchaseDate: new Date("2024-05-01"),
+    vendor: "Lifting Gear Direct",
+    condition: "new",
+    assignedLocation: "Site C",
+    assignedTo: "Installation Team",
+    certificateNo: "CERT-HW-2024-005",
+    certificateIssueDate: new Date("2024-05-05"),
+    certificateExpiryDate: new Date("2025-05-05"),
+    nextInspectionDue: new Date("2024-11-05"),
+    inspectionFrequency: "6 months",
+    lastInspectionDate: new Date("2024-05-05"),
+    inspectionStatus: "passed",
+    remarks: "Monthly cable inspection required",
+    safetyCertified: true,
+    inspectorName: "Hassan Ibrahim",
+    storageLocation: "Tool Storage C",
+    safetyColorCode: "blue",
+    status: "active",
+    image: "/images/handwinch.jpg",
     project: "Project C"
   }
 ];
@@ -681,6 +743,9 @@ const LiftingTools = () => {
                             <SelectItem value="shackle">{isRTL ? "مشبك" : "Shackle"}</SelectItem>
                             <SelectItem value="hook">{isRTL ? "خطاف" : "Hook"}</SelectItem>
                             <SelectItem value="eyebolt">{isRTL ? "برغي عين" : "Eyebolt"}</SelectItem>
+                            <SelectItem value="hoist">{isRTL ? "رافعة" : "Hoist"}</SelectItem>
+                            <SelectItem value="jack">{isRTL ? "جاك" : "Jack"}</SelectItem>
+                            <SelectItem value="winch">{isRTL ? "ونش" : "Winch"}</SelectItem>
                           </SelectContent>
                         </Select>
                         {formErrors.accessoryType && (
@@ -698,6 +763,11 @@ const LiftingTools = () => {
                             <SelectItem value="Yoke">Yoke</SelectItem>
                             <SelectItem value="Green Pin">Green Pin</SelectItem>
                             <SelectItem value="Gunnebo">Gunnebo</SelectItem>
+                            <SelectItem value="KITO">KITO</SelectItem>
+                            <SelectItem value="Yale">Yale</SelectItem>
+                            <SelectItem value="Powerbuilt">Powerbuilt</SelectItem>
+                            <SelectItem value="Bishamon">Bishamon</SelectItem>
+                            <SelectItem value="Tractel">Tractel</SelectItem>
                           </SelectContent>
                         </Select>
                         {formErrors.manufacturer && (
@@ -1240,6 +1310,150 @@ const LiftingTools = () => {
           </Card>
         </div>
 
+        {/* Lifting Tools Overview Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>{isRTL ? "نظرة عامة على ملحقات الرفع" : "Lifting Accessories Overview"}</CardTitle>
+                <CardDescription>
+                  {isRTL ? "إدارة ومراقبة ملحقات الرفع" : "Manage and monitor your lifting accessories"}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+
+              {/* Electric Chain Hoist */}
+              <div
+                className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+                onClick={() => {
+                  setSearchTerm("chain hoist");
+                  setActiveTab("list");
+                }}
+              >
+                <div className="p-2">
+                  <div className="aspect-square relative">
+                    <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                      {filteredAccessories.filter(t => t.accessoryName.toLowerCase().includes("chain hoist")).length}
+                    </div>
+                    <img
+                      src="/images/Electric chain hoist.jpg"
+                      alt="Electric Chain Hoist"
+                      className="w-full h-full object-contain p-2"
+                    />
+                  </div>
+                  <div className="pt-2 text-center">
+                    <h3 className="text-sm font-medium truncate">Electric Chain Hoist</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lever Hoist */}
+              <div
+                className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+                onClick={() => {
+                  setSearchTerm("lever hoist");
+                  setActiveTab("list");
+                }}
+              >
+                <div className="p-2">
+                  <div className="aspect-square relative">
+                    <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                      {filteredAccessories.filter(t => t.accessoryName.toLowerCase().includes("lever hoist")).length}
+                    </div>
+                    <img
+                      src="/images/Lever Hoist.jpg"
+                      alt="Lever Hoist"
+                      className="w-full h-full object-contain p-2"
+                    />
+                  </div>
+                  <div className="pt-2 text-center">
+                    <h3 className="text-sm font-medium truncate">Lever Hoist</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hydraulic Jack */}
+              <div
+                className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+                onClick={() => {
+                  setSearchTerm("hydraulic jack");
+                  setActiveTab("list");
+                }}
+              >
+                <div className="p-2">
+                  <div className="aspect-square relative">
+                    <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                      {filteredAccessories.filter(t => t.accessoryName.toLowerCase().includes("hydraulic jack")).length}
+                    </div>
+                    <img
+                      src="/images/Hydraulic Jack.jpg"
+                      alt="Hydraulic Jack"
+                      className="w-full h-full object-contain p-2"
+                    />
+                  </div>
+                  <div className="pt-2 text-center">
+                    <h3 className="text-sm font-medium truncate">Hydraulic Jack</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hydraulic Lifting Table */}
+              <div
+                className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+                onClick={() => {
+                  setSearchTerm("lifting table");
+                  setActiveTab("list");
+                }}
+              >
+                <div className="p-2">
+                  <div className="aspect-square relative">
+                    <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                      {filteredAccessories.filter(t => t.accessoryName.toLowerCase().includes("lifting table")).length}
+                    </div>
+                    <img
+                      src="/images/Hydraulic Lifting Table.jpg"
+                      alt="Hydraulic Lifting Table"
+                      className="w-full h-full object-contain p-2"
+                    />
+                  </div>
+                  <div className="pt-2 text-center">
+                    <h3 className="text-sm font-medium truncate">Hydraulic Lifting Table</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hand Winch */}
+              <div
+                className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+                onClick={() => {
+                  setSearchTerm("hand winch");
+                  setActiveTab("list");
+                }}
+              >
+                <div className="p-2">
+                  <div className="aspect-square relative">
+                    <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                      {filteredAccessories.filter(t => t.accessoryName.toLowerCase().includes("hand winch")).length}
+                    </div>
+                    <img
+                      src="/images/handwinch.jpg"
+                      alt="Hand Winch"
+                      className="w-full h-full object-contain p-2"
+                    />
+                  </div>
+                  <div className="pt-2 text-center">
+                    <h3 className="text-sm font-medium truncate">Hand Winch</h3>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Quick Tips Section */}
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="pt-6">
@@ -1292,6 +1506,7 @@ const LiftingTools = () => {
             </div>
           </CardContent>
         </Card>
+        
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

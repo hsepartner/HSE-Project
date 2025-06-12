@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle ,CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,8 +73,164 @@ interface PowerTool {
   project: string; // Added project field
 }
 
+
 // Sample data with enhanced bio-data
 const SAMPLE_POWER_TOOLS: PowerTool[] = [
+  {
+    id: "PT-00126",
+    toolName: "Reciprocating Saw",
+    toolId: "PT-00126",
+    toolType: "electric",
+    manufacturer: "dewalt",
+    modelNumber: "DWE305",
+    powerRating: "1100W",
+    toolSize: "12\" blade",
+    weight: "3.5 kg",
+    purchaseDate: new Date("2023-08-15"),
+    vendor: "Al Madina Hardware",
+    condition: "good",
+    assignedLocation: "Site B",
+    assignedTo: "Construction Team",
+    certificateNo: "TPI-POW-9880",
+    certificateIssueDate: new Date("2024-08-15"),
+    certificateExpiryDate: new Date("2025-08-15"),
+    nextCalibrationDue: new Date("2024-12-15"),
+    inspectionFrequency: "monthly",
+    lastInspectionDate: new Date("2025-05-15"),
+    inspectionStatus: "passed",
+    remarks: "Regular maintenance performed",
+    operatorLicenseRequired: true,
+    operatorName: "John Smith",
+    storageLocation: "Tool Cabinet 3",
+    safetyAccessories: "Safety Glasses, Hearing Protection",
+    status: "active",
+    project: "Project A",
+    image: "/images/Reciprocating Saw.jpg"
+  },
+  {
+    id: "PT-00127",
+    toolName: "Table Saw",
+    toolId: "PT-00127",
+    toolType: "electric",
+    manufacturer: "bosch",
+    modelNumber: "GTS10J",
+    powerRating: "1800W",
+    toolSize: "10\" blade",
+    weight: "26 kg",
+    purchaseDate: new Date("2023-09-20"),
+    vendor: "Al-Futtaim Tools",
+    condition: "good",
+    assignedLocation: "Workshop B",
+    assignedTo: "Carpentry Team",
+    certificateNo: "TPI-POW-9881",
+    certificateIssueDate: new Date("2024-09-20"),
+    certificateExpiryDate: new Date("2025-09-20"),
+    nextCalibrationDue: new Date("2024-11-20"),
+    inspectionFrequency: "weekly",
+    lastInspectionDate: new Date("2025-06-01"),
+    inspectionStatus: "passed",
+    remarks: "New blade installed",
+    operatorLicenseRequired: true,
+    operatorName: "Mike Wilson",
+    storageLocation: "Workshop Storage",
+    safetyAccessories: "Push Stick, Safety Guard, Safety Glasses",
+    status: "active",
+    project: "Project B",
+    image: "/images/Table Saw.jpg"
+  },
+  {
+    id: "PT-00128",
+    toolName: "Angle Grinder",
+    toolId: "PT-00128",
+    toolType: "electric",
+    manufacturer: "makita",
+    modelNumber: "GA5030R",
+    powerRating: "720W",
+    toolSize: "5\" disc",
+    weight: "1.8 kg",
+    purchaseDate: new Date("2023-10-05"),
+    vendor: "Al Madina Hardware",
+    condition: "maintenance",
+    assignedLocation: "Site C",
+    assignedTo: "Maintenance Team",
+    certificateNo: "TPI-POW-9882",
+    certificateIssueDate: new Date("2024-10-05"),
+    certificateExpiryDate: new Date("2025-10-05"),
+    nextCalibrationDue: new Date("2024-12-05"),
+    inspectionFrequency: "monthly",
+    lastInspectionDate: new Date("2025-05-30"),
+    inspectionStatus: "needs-service",
+    remarks: "Requires disc replacement",
+    operatorLicenseRequired: true,
+    operatorName: "Sara Khan",
+    storageLocation: "Tool Room 1",
+    safetyAccessories: "Face Shield, Gloves, Dust Mask",
+    status: "maintenance",
+    project: "Project C",
+    image: "/images/Angle Grinder.jpg"
+  },
+  {
+    id: "PT-00129",
+    toolName: "Jigsaw",
+    toolId: "PT-00129",
+    toolType: "electric",
+    manufacturer: "milwaukee",
+    modelNumber: "M18FJS",
+    powerRating: "18V",
+    toolSize: "T-shank",
+    weight: "2.4 kg",
+    purchaseDate: new Date("2023-11-15"),
+    vendor: "Al-Futtaim Tools",
+    condition: "good",
+    assignedLocation: "Site A",
+    assignedTo: "Finishing Team",
+    certificateNo: "TPI-POW-9883",
+    certificateIssueDate: new Date("2024-11-15"),
+    certificateExpiryDate: new Date("2025-11-15"),
+    nextCalibrationDue: new Date("2024-12-15"),
+    inspectionFrequency: "monthly",
+    lastInspectionDate: new Date("2025-05-25"),
+    inspectionStatus: "passed",
+    remarks: "Battery in good condition",
+    operatorLicenseRequired: false,
+    operatorName: "Ali Hassan",
+    storageLocation: "Tool Cabinet 4",
+    safetyAccessories: "Safety Glasses, Dust Collection",
+    status: "active",
+    project: "Project A",
+    image: "/images/jigsaw.jpeg"
+  },
+  {
+    id: "PT-00130",
+    toolName: "Circular Saw",
+    toolId: "PT-00130",
+    toolType: "electric",
+    manufacturer: "dewalt",
+    modelNumber: "DCS573",
+    powerRating: "20V",
+    toolSize: "7-1/4\" blade",
+    weight: "3.7 kg",
+    purchaseDate: new Date("2023-12-01"),
+    vendor: "Al Madina Hardware",
+    condition: "new",
+    assignedLocation: "Site D",
+    assignedTo: "Construction Team",
+    certificateNo: "TPI-POW-9884",
+    certificateIssueDate: new Date("2024-12-01"),
+    certificateExpiryDate: new Date("2025-12-01"),
+    nextCalibrationDue: new Date("2024-11-01"),
+    inspectionFrequency: "weekly",
+    lastInspectionDate: new Date("2025-06-01"),
+    inspectionStatus: "passed",
+    remarks: "New tool, excellent condition",
+    operatorLicenseRequired: true,
+    operatorName: "Robert Chen",
+    storageLocation: "Tool Room 2",
+    safetyAccessories: "Safety Glasses, Hearing Protection, Dust Mask",
+    status: "active",
+    project: "Project B",
+    image: "/images/circular saw.jpg"
+  },
   {
     id: "PT-00123",
     toolName: "Angle Grinder",
@@ -103,7 +259,8 @@ const SAMPLE_POWER_TOOLS: PowerTool[] = [
     storageLocation: "Tool Cabinet 2",
     safetyAccessories: "Gloves, Goggles, Ear Protection",
     status: "active",
-    project: "Project A"
+    project: "Project A",
+    image: "/images/Angle Grinder.jpg"
   },
   {
     id: "PT-00124",
@@ -133,7 +290,8 @@ const SAMPLE_POWER_TOOLS: PowerTool[] = [
     storageLocation: "Store Room B",
     safetyAccessories: "Safety Glasses, Work Gloves",
     status: "active",
-    project: "Project B"
+    project: "Project B",
+    image: "/images/circular saw.jpg"
   },
   {
     id: "PT-00125",
@@ -163,7 +321,8 @@ const SAMPLE_POWER_TOOLS: PowerTool[] = [
     storageLocation: "Tool Cabinet 1",
     safetyAccessories: "Ear Protection, Safety Glasses",
     status: "maintenance",
-    project: "Project C"
+    project: "Project C",
+    image: "/images/jigsaw.jpg"
   }
 ];
 
@@ -1275,6 +1434,151 @@ const PowerTools = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="mb-6">
+  <CardHeader>
+    <div className="flex items-center justify-between">
+      <div>
+        <CardTitle>{isRTL ? "نظرة عامة على الأدوات الكهربائية" : "Power Tools Overview"}</CardTitle>
+        <CardDescription>
+          {isRTL ? "إدارة ومراقبة الأدوات الكهربائية" : "Manage and monitor your power tools"}
+        </CardDescription>
+      </div>
+    </div>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+
+      {/* Angle Grinder */}
+      <div
+        className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+        onClick={() => {
+          setSearchTerm("grinder");
+          setActiveTab("list");
+        }}
+      >
+        <div className="p-2">
+          <div className="aspect-square relative">
+            <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+              {filteredTools.filter(t => t.toolName.toLowerCase().includes("grinder")).length}
+            </div>
+            <img
+              src="/images/Angle Grinder.jpg"
+              alt="Angle Grinder"
+              className="w-full h-full object-contain p-2"
+            />
+          </div>
+          <div className="pt-2 text-center">
+            <h3 className="text-sm font-medium truncate">Angle Grinder</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* Table Saw */}
+      <div
+        className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+        onClick={() => {
+          setSearchTerm("table saw");
+          setActiveTab("list");
+        }}
+      >
+        <div className="p-2">
+          <div className="aspect-square relative">
+            <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+              {filteredTools.filter(t => t.toolName.toLowerCase().includes("table saw")).length}
+            </div>
+            <img
+              src="/images/Table Saw.jpg"
+              alt="Table Saw"
+              className="w-full h-full object-contain p-2"
+            />
+          </div>
+          <div className="pt-2 text-center">
+            <h3 className="text-sm font-medium truncate">Table Saw</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* Circular Saw */}
+      <div
+        className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+        onClick={() => {
+          setSearchTerm("circular saw");
+          setActiveTab("list");
+        }}
+      >
+        <div className="p-2">
+          <div className="aspect-square relative">
+            <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+              {filteredTools.filter(t => t.toolName.toLowerCase().includes("circular saw")).length}
+            </div>
+            <img
+              src="/images/circular saw.jpg"
+              alt="Circular Saw"
+              className="w-full h-full object-contain p-2"
+            />
+          </div>
+          <div className="pt-2 text-center">
+            <h3 className="text-sm font-medium truncate">Circular Saw</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* Reciprocating Saw */}
+      <div
+        className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+        onClick={() => {
+          setSearchTerm("reciprocating");
+          setActiveTab("list");
+        }}
+      >
+        <div className="p-2">
+          <div className="aspect-square relative">
+            <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+              {filteredTools.filter(t => t.toolName.toLowerCase().includes("reciprocating")).length}
+            </div>
+            <img
+              src="/images/Reciprocating Saw.jpg"
+              alt="Reciprocating Saw"
+              className="w-full h-full object-contain p-2"
+            />
+          </div>
+          <div className="pt-2 text-center">
+            <h3 className="text-sm font-medium truncate">Reciprocating Saw</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* Jigsaw */}
+      <div
+        className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer"
+        onClick={() => {
+          setSearchTerm("jigsaw");
+          setActiveTab("list");
+        }}
+      >
+        <div className="p-2">
+          <div className="aspect-square relative">
+            <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+              {filteredTools.filter(t => t.toolName.toLowerCase().includes("jigsaw")).length}
+            </div>
+            <img
+              src="/images/jigsaw.jpeg"
+              alt="Jigsaw"
+              className="w-full h-full object-contain p-2"
+            />
+          </div>
+          <div className="pt-2 text-center">
+            <h3 className="text-sm font-medium truncate">Jigsaw</h3>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </CardContent>
+</Card>
+
+
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
