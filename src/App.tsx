@@ -18,6 +18,7 @@ import LoginPage from "./components/auth/LoginPage";
 const queryClient = new QueryClient();
 const DesignSystem = React.lazy(() => import("./pages/DesignSystem"));
 const EquipmentRegistry = React.lazy(() => import("./pages/EquipmentRegistry"));
+const Vehicles = React.lazy(() => import("./pages/Vehicles"));
 const ComplianceDashboard = React.lazy(
   () => import("./pages/ComplianceDashboard")
 );
@@ -134,6 +135,17 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Suspense fallback={<Loading />}>
               <EquipmentRegistry />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/vehicles"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <Vehicles />
             </Suspense>
           </ProtectedRoute>
         }

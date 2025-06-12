@@ -309,6 +309,8 @@ export function EquipmentDetail({ equipment, className, onBack }: EquipmentDetai
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Document Upload and Note Dialogs can remain here if they are not part of the tabs */}
     </div>
   );
 }
