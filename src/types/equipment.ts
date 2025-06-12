@@ -1,3 +1,5 @@
+import type { DailyInspection, MonthlyInspection } from './inspection';
+
 export type EquipmentCategory = 'heavy' | 'light' | 'power-tool' | 'lifting-tool';
 export type OperationalStatus = 'active' | 'maintenance' | 'decommissioned';
 export type DocumentStatus = 'verified' | 'pending' | 'rejected';
@@ -19,6 +21,8 @@ export interface Equipment {
   location?: string;
   parentEquipmentId?: string;
   image?: string;
+  dailyInspections?: DailyInspection[];
+  monthlyInspections?: MonthlyInspection[];
 }
 
 export interface Document {
