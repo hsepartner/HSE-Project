@@ -1,33 +1,39 @@
-export type InspectionItemStatus = 'passed' | 'failed' | 'not-checked';
-
-export interface InspectionItem {
+// Common inspection item interface
+interface InspectionItem {
   id: string;
   description: string;
   isRequired: boolean;
-  status: InspectionItemStatus;
-  notes?: string;
-  checkedBy?: string;
-  checkedAt?: string;
+  status: 'not-checked' | 'passed' | 'failed';
 }
 
-export interface DailyInspection {
+// Base inspection interface
+interface BaseInspection {
   date: string;
+  items: InspectionItem[];
+  notes: string;
+  status: 'completed';
+}
+
+// Daily inspections
+export interface DailyInspection extends BaseInspection {
   operatorId: string;
   operatorName: string;
-  items: InspectionItem[];
-  notes?: string;
-  status: 'completed' | 'incomplete';
   equipmentId: string;
+  toolName: string;
+  serialNumber: string;
+  manufacturer: string;
+  modelNumber: string;
 }
 
-export interface MonthlyInspection {
-  date: string;
+// Monthly inspections
+export interface MonthlyInspection extends BaseInspection {
   technicianId: string;
   technicianName: string;
-  items: InspectionItem[];
-  notes?: string;
-  status: 'completed' | 'incomplete';
   equipmentId: string;
+  toolName: string;
+  serialNumber: string;
+  manufacturer: string;
+  modelNumber: string;
   nextInspectionDate: string;
 }
 

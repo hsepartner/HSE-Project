@@ -19,6 +19,7 @@ import {
   Search, 
   Filter, 
   Download, 
+  CalendarCheck,
   Upload, 
   Wrench, 
   AlertTriangle, 
@@ -39,6 +40,8 @@ import {
   Share2
 } from "lucide-react";
 import { format } from "date-fns";
+import { LiftingAccessoryDailyChecklistDialog } from "@/components/lifting-tools/LiftingAccessoryDailyChecklistDialog";
+import { LiftingAccessoryMonthlyInspectionDialog } from "@/components/lifting-tools/LiftingAccessoryMonthlyInspectionDialog";
 
 // Lifting Accessory interface with project field
 interface LiftingAccessory {
@@ -378,6 +381,8 @@ const LiftingTools = () => {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState("Project A");
+  const [dailyInspectionOpen, setDailyInspectionOpen] = useState(false);
+  const [monthlyInspectionOpen, setMonthlyInspectionOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state for bio-data entry
@@ -657,6 +662,71 @@ const LiftingTools = () => {
     if (imageUrl) {
       setSelectedImage(imageUrl);
       setShowImageDialog(true);
+    }
+  };
+
+  // Daily Inspection handler
+  const handleDailyInspectionSubmit = async (inspection: DailyInspection) => {
+    try {
+      // Update the accessory with inspection results
+      const updatedAccessories = accessories.map(acc => {
+        if (acc.id === selectedAccessory?.id) {
+          return {
+            ...acc,
+            dailyInspections: [...(acc.dailyInspections || []), inspection],
+            lastInspectionDate: new Date(),
+            inspectionStatus: getInspectionStatus(inspection)
+          };
+        }
+        return acc;
+      });
+      
+      setAccessories(updatedAccessories);
+      setDailyInspectionOpen(false);
+      toast({
+        title: isRTL ? "نجاح" : "Success",
+        description: isRTL ? "تم حفظ الفحص اليومي بنجاح" : "Daily inspection saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving daily inspection:', error);
+      toast({
+        title: isRTL ? "خطأ" : "Error",
+        description: isRTL ? "حدث خطأ أثناء حفظ الفحص" : "Error saving inspection",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Monthly Inspection handler
+  const handleMonthlyInspectionSubmit = async (inspection: MonthlyInspection) => {
+    try {
+      // Update the accessory with inspection results
+      const updatedAccessories = accessories.map(acc => {
+        if (acc.id === selectedAccessory?.id) {
+          return {
+            ...acc,
+            monthlyInspections: [...(acc.monthlyInspections || []), inspection],
+            lastInspectionDate: new Date(),
+            nextInspectionDue: new Date(inspection.nextInspectionDate),
+            inspectionStatus: getInspectionStatus(inspection)
+          };
+        }
+        return acc;
+      });
+      
+      setAccessories(updatedAccessories);
+      setMonthlyInspectionOpen(false);
+      toast({
+        title: isRTL ? "نجاح" : "Success",
+        description: isRTL ? "تم حفظ الفحص الشهري بنجاح" : "Monthly inspection saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving monthly inspection:', error);
+      toast({
+        title: isRTL ? "خطأ" : "Error",
+        description: isRTL ? "حدث خطأ أثناء حفظ الفحص" : "Error saving inspection",
+        variant: "destructive"
+      });
     }
   };
 
@@ -1719,6 +1789,22 @@ const LiftingTools = () => {
                       <Button 
                         variant="outline" 
                         size="sm" 
+                        onClick={() => setDailyInspectionOpen(true)}
+                      >
+                        <CalendarCheck className="h-4 w-4 mr-2" />
+                        {isRTL ? "الفحص اليومي" : "Daily Check"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setMonthlyInspectionOpen(true)}
+                      >
+                        <CalendarCheck className="h-4 w-4 mr-2" />
+                        {isRTL ? "الفحص الشهري" : "Monthly Check"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
                         onClick={(e) => handleShareAccessory(selectedAccessory, e)}
                       >
                         <Share2 className="h-4 w-4 mr-2" />
@@ -1867,6 +1953,21 @@ const LiftingTools = () => {
           onShare={handleShare}
           loading={false}
           isRTL={isRTL}
+        />
+
+        {/* Daily Inspection Dialog */}
+        <LiftingAccessoryDailyChecklistDialog
+          open={dailyInspectionOpen}
+          onOpenChange={setDailyInspectionOpen}
+          accessory={selectedAccessory!}
+          onSubmit={handleDailyInspectionSubmit}
+        />
+        {/* Monthly Inspection Dialog */}
+        <LiftingAccessoryMonthlyInspectionDialog
+          open={monthlyInspectionOpen}
+          onOpenChange={setMonthlyInspectionOpen}
+          accessory={selectedAccessory!}
+          onSubmit={handleMonthlyInspectionSubmit}
         />
       </div>
     </DashboardLayout>
