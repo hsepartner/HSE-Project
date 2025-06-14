@@ -13,34 +13,6 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    {
-      name: 'generate-spa-redirect',
-     closeBundle() {
-  const distDir = path.resolve(__dirname, 'dist');
-
-  // Ensure the dist directory exists
-  if (!fs.existsSync(distDir)) {
-    fs.mkdirSync(distDir, { recursive: true });
-  }
-
-  const vercelConfig = {
-    rewrites: [{ source: "/(.*)", destination: "/index.html" }]
-  };
-
-  // Write vercel.json
-  fs.writeFileSync(
-    path.join(distDir, 'vercel.json'),
-    JSON.stringify(vercelConfig, null, 2)
-  );
-
-  // Write _redirects file as fallback
-  fs.writeFileSync(
-    path.join(distDir, '_redirects'),
-    '/* /index.html 200'
-  );
-}
-
-    }
   ].filter(Boolean),
   resolve: {
     alias: {
