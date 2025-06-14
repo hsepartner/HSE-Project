@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { VehicleDailyChecklistDialog } from "./VehicleDailyChecklistDialog";
-import { VehicleMonthlyInspectionDialog } from "./VehicleMonthlyInspectionDialog";
+import { MonthlyInspectionDialog } from "./VehicleMonthlyInspectionDialog";
 
 // Mock data for history and maintenance
 const mockHistory = [
@@ -504,7 +504,7 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
         onSubmit={handleInspectionSubmit}
       />
       
-      <VehicleMonthlyInspectionDialog
+      <MonthlyInspectionDialog
         vehicle={vehicle}
         open={isMonthlyChecklistOpen}
         onOpenChange={setIsMonthlyChecklistOpen}
