@@ -1,28 +1,41 @@
-// vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { componentTagger } from "lovable-tagger";
+import fs from 'fs';
 
-// Import conditionally inside the function to avoid issues during build
-export default defineConfig(({ mode }) => {
-  const isDev = mode === "development";
-
-  // Only require lovable-tagger in development to prevent build-time errors
-  const devPlugins = isDev ? [require("lovable-tagger").componentTagger()] : [];
-
-  return {
-    server: {
-      host: "::",
-      port: 8080,
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => ({
+  server: {
+    host: "::",
+    port: 8080,
+  },
+  plugins: [
+    react(),
+    mode === 'development' && componentTagger(),
+    {
+      name: 'generate-spa-redirect',
+      closeBundle() {
+        // Create vercel.json in the dist folder
+        const vercelConfig = {
+          "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+        };
+        fs.writeFileSync(
+          path.resolve(__dirname, 'dist/vercel.json'), 
+          JSON.stringify(vercelConfig, null, 2)
+        );
+        
+        // Also create a _redirects file as a fallback
+        fs.writeFileSync(
+          path.resolve(__dirname, 'dist/_redirects'),
+          '/* /index.html 200'
+        );
+      }
+    }
+  ].filter(Boolean),
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
-    plugins: [
-      react(),
-      ...devPlugins,
-    ],
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
-    },
-  };
-});
+  },
+}));

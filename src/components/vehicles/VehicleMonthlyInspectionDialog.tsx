@@ -158,14 +158,14 @@ const INSPECTION_ITEMS = [
 ];
 
 interface MonthlyInspectionDialogProps {
-  equipment: Equipment;
+  vehicle: Equipment; // Changed from equipment: Equipment
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (inspection: MonthlyInspection) => Promise<void>;
 }
 
 export function MonthlyInspectionDialog({
-  equipment,
+  vehicle, // Changed from equipment
   open,
   onOpenChange,
   onSubmit
@@ -243,14 +243,14 @@ export function MonthlyInspectionDialog({
       const inspection: MonthlyInspection = {
         date: new Date().toISOString(),
         technicianId: 'current-user-id',
-        technicianName: equipment.assignedTo || 'Unknown Technician',
+        technicianName: vehicle.assignedTo || 'Unknown Technician', // Changed from equipment to vehicle
         items: Object.entries(responses).map(([id, response]) => ({
           id,
           status: response.status || 'not-checked',
           comment: response.comment
         })),
         status: 'completed',
-        equipmentId: equipment.id,
+        equipmentId: vehicle.id,
         nextInspectionDate,
         notes: ''
       };
@@ -288,15 +288,15 @@ export function MonthlyInspectionDialog({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
               <div className="flex flex-col sm:flex-row sm:items-center">
                 <span className="text-muted-foreground mb-1 sm:mb-0">
-                  {isRTL ? "المعدات:" : "Equipment:"}
+                  {isRTL ? "المركبة:" : "Vehicle:"}
                 </span>
-                <span className="font-medium sm:ml-2">{equipment.name}</span>
+                <span className="font-medium sm:ml-2">{vehicle.name}</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center">
                 <span className="text-muted-foreground mb-1 sm:mb-0">
-                  {isRTL ? "الرقم التسلسلي:" : "Serial No:"}
+                  {isRTL ? "رقم اللوحة:" : "Plate No:"}
                 </span>
-                <span className="font-medium sm:ml-2">{equipment.serialNumber}</span>
+                <span className="font-medium sm:ml-2">{vehicle.plateNumber}</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center">
                 <span className="text-muted-foreground mb-1 sm:mb-0">
