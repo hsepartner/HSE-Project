@@ -5,9 +5,94 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Car } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2, Car } from "lucide-react";
 import type { Vehicle } from "@/types/vehicle";
 import { DEFAULT_VEHICLE_DAILY_CHECKLIST_ITEMS, InspectionItem, VehicleDailyInspection } from "@/types/vehicleInspection";
+import { cn } from "@/lib/utils";
+
+// Define inspection items with images and bilingual descriptions
+const INSPECTION_ITEMS = [
+  {
+    id: "fire-extinguisher",
+    image: "/images/fire.png",
+    title: "Fire Extinguisher",
+    description: "Fire extinguisher available",
+    titleAr: "طفاية الحريق",
+    descriptionAr: "طفاية الحريق متوفرة",
+  },
+  {
+    id: "first-aid",
+    image: "/images/firstaid.png",
+    title: "First Aid Box",
+    description: "First aid box available",
+    titleAr: "صندوق الإسعافات الأولية",
+    descriptionAr: "صندوق الإسعافات الأولية متوفر",
+  },
+  {
+    id: "oil-check",
+    image: "/images/checkoil.png",
+    title: "Oil Check",
+    description: "Check oil level, no oil leak observed",
+    titleAr: "فحص الزيت",
+    descriptionAr: "فحص مستوى الزيت، لا يوجد تسرب للزيت",
+  },
+  {
+    id: "windshield",
+    image: "/images/windshield.png",
+    title: "Windshield",
+    description: "Windshield is clean and free from damages",
+    titleAr: "الزجاج الأمامي",
+    descriptionAr: "الزجاج الأمامي نظيف وخالي من الأضرار",
+  },
+  {
+    id: "lights",
+    image: "/images/headlights.png",
+    title: "Lights",
+    description: "Head lights, Indicator lights, break lights are operational",
+    titleAr: "الأضواء",
+    descriptionAr: "المصابيح الأمامية، إشارات الانعطاف، أضواء الفرامل تعمل",
+  },
+  {
+    id: "tires",
+    image: "/images/tirecondition.png",
+    title: "Tire Condition",
+    description: "Tyre condition – FRONT tyre / REAR tyre",
+    titleAr: "حالة الإطارات",
+    descriptionAr: "حالة الإطارات - الإطارات الأمامية / الخلفية",
+  },
+  {
+    id: "cabin",
+    image: "/images/closedcabin.png",
+    title: "Cabin",
+    description: "Closed cabin and Air Conditioning is working",
+    titleAr: "المقصورة",
+    descriptionAr: "المقصورة مغلقة ونظام التكييف يعمل",
+  },
+  {
+    id: "reverse-alarm",
+    image: "/images/reversealarm.png",
+    title: "Reverse Alarm",
+    description: "Reverse alarm, horn, mirrors are operational",
+    titleAr: "إنذار الرجوع للخلف",
+    descriptionAr: "إنذار الرجوع للخلف، البوق، المرايا تعمل",
+  },
+  {
+    id: "hoses",
+    image: "/images/housepipes.png",
+    title: "Hoses & Pipes",
+    description: "Hoses & pipe joints are in good condition",
+    titleAr: "الخراطيم والأنابيب",
+    descriptionAr: "الخراطيم ووصلات الأنابيب في حالة جيدة",
+  },
+  {
+    id: "bucket",
+    image: "/images/conditinofbucket.png",
+    title: "Bucket Condition",
+    description: "Condition of buckets (teeth protected)",
+    titleAr: "حالة الدلو",
+    descriptionAr: "حالة الدلاء (الأسنان محمية)",
+  },
+];
 
 interface VehicleDailyChecklistDialogProps {
   vehicle: Vehicle;
@@ -20,94 +105,150 @@ export function VehicleDailyChecklistDialog({
   vehicle,
   open,
   onOpenChange,
-  onSubmit
+  onSubmit,
 }: VehicleDailyChecklistDialogProps) {
   const { currentLanguage } = useLanguage();
-  const isRTL = currentLanguage === 'ar';
-  const [notes, setNotes] = useState('');
-  const [mileage, setMileage] = useState('');
-  const [items, setItems] = useState<InspectionItem[]>(
-    () => vehicle.category ? [...DEFAULT_VEHICLE_DAILY_CHECKLIST_ITEMS[vehicle.category]] : []
-  );
+  const isRTL = currentLanguage === "ar";
+  const [currentStep, setCurrentStep] = useState(0);
+  const [mileage, setMileage] = useState("");
+  const [responses, setResponses] = useState<
+    Record<string, { status?: "passed" | "failed"; comment: string }>
+  >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [isCommentOpen, setIsCommentOpen] = useState(false);
 
-  const handleItemStatusChange = (itemId: string, status: 'passed' | 'failed') => {
-    setItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, status } : item
-    ));
+  const checklistItems = vehicle.category ? INSPECTION_ITEMS[vehicle.category] || [] : [];
+  const currentItem = checklistItems[currentStep];
+
+  // Handle status change for the current item
+  const handleResponse = (status: "passed" | "failed") => {
+    setResponses((prev) => ({
+      ...prev,
+      [currentItem.id]: {
+        status,
+        comment: prev[currentItem.id]?.comment || "",
+      },
+    }));
+  };
+
+  // Handle comment input for the current item
+  const handleComment = (comment: string) => {
+    setResponses((prev) => ({
+      ...prev,
+      [currentItem.id]: {
+        status: prev[currentItem.id]?.status,
+        comment,
+      },
+    }));
+  };
+
+  const handleNext = () => {
+    if (currentStep < checklistItems.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+      setIsCommentOpen(false); // Close comment section when moving to next item
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+      setIsCommentOpen(false); // Close comment section when moving to previous item
+    }
   };
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      setError('');
+      setError("");
 
       // Validate mileage
       if (!mileage || isNaN(Number(mileage))) {
-        setError(isRTL 
-          ? 'يرجى إدخال قراءة عداد المسافات'
-          : 'Please enter the current mileage reading'
+        setError(
+          isRTL
+            ? "يرجى إدخال قراءة عداد المسافات"
+            : "Please enter the current mileage reading"
         );
         return;
       }
 
-      // Validate that all required items have been checked
-      const uncheckedRequired = items.filter(item => 
-        item.isRequired && item.status === 'not-checked'
+      // Validate that all required items have a status
+      const uncheckedRequired = checklistItems.filter(
+        (item) => item.isRequired && !responses[item.id]?.status
       );
 
       if (uncheckedRequired.length > 0) {
-        setError(isRTL 
-          ? 'يرجى إكمال جميع العناصر المطلوبة قبل التقديم'
-          : 'Please complete all required items before submitting'
+        setError(
+          isRTL
+            ? "يرجى إكمال جميع العناصر المطلوبة قبل التقديم"
+            : "Please complete all required items before submitting"
         );
         return;
       }
 
       const inspection: VehicleDailyInspection = {
         date: new Date().toISOString(),
-        driverId: 'current-user-id', // This should come from auth context
-        driverName: vehicle.assignedTo || 'Unknown Driver',
-        items,
-        notes,
-        status: 'completed',
+        driverId: "current-user-id",
+        driverName: vehicle.assignedTo || "Unknown Driver",
+        items: checklistItems.map((item) => ({
+          id: item.id,
+          description: item.description,
+          status: responses[item.id]?.status || "not-checked",
+          comment: responses[item.id]?.comment || "",
+          isRequired: item.isRequired,
+        })),
+        notes: "",
+        status: "completed",
         vehicleId: vehicle.id,
-        mileage: Number(mileage)
+        mileage: Number(mileage),
       };
 
       await onSubmit(inspection);
       onOpenChange(false);
+      setCurrentStep(0);
+      setResponses({});
+      setMileage("");
+      setIsCommentOpen(false);
     } catch (err) {
-      setError(isRTL 
-        ? 'حدث خطأ أثناء حفظ قائمة التحقق'
-        : 'An error occurred while saving the checklist'
+      setError(
+        isRTL
+          ? "حدث خطأ أثناء حفظ قائمة التحقق"
+          : "An error occurred while saving the checklist"
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!vehicle || !currentItem) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2">
             <Car className="h-5 w-5" />
-            {isRTL ? "قائمة التحقق اليومية" : "Daily Vehicle Inspection"}
+            {isRTL ? "قائمة التحقق اليومية للمركبة" : "Daily Vehicle Inspection"}
+            <span className="text-sm text-muted-foreground ml-2">
+              {currentStep + 1} / {checklistItems.length}
+            </span>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Vehicle Info */}
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-muted/50 p-4 rounded-lg">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">{isRTL ? "المركبة:" : "Vehicle:"}</span>
+                <span className="text-muted-foreground">
+                  {isRTL ? "المركبة:" : "Vehicle:"}
+                </span>
                 <span className="font-medium ml-2">{vehicle.name}</span>
               </div>
               <div>
-                <span className="text-gray-600">{isRTL ? "رقم اللوحة:" : "Plate No:"}</span>
+                <span className="text-muted-foreground">
+                  {isRTL ? "رقم اللوحة:" : "Plate No:"}
+                </span>
                 <span className="font-medium ml-2">{vehicle.plateNumber}</span>
               </div>
             </div>
@@ -126,59 +267,71 @@ export function VehicleDailyChecklistDialog({
             />
           </div>
 
-          {/* Checklist Items */}
-          <div className="space-y-4">
-            <h3 className="font-medium border-b pb-2">
-              {isRTL ? "قائمة فحص السلامة" : "Safety Inspection Checklist"}
-            </h3>
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-1">
-                    <p className="font-medium">
-                      {item.description}
-                      {item.isRequired && <span className="text-red-500 ml-1">*</span>}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant={item.status === 'passed' ? 'default' : 'outline'}
-                      className="w-24"
-                      onClick={() => handleItemStatusChange(item.id, 'passed')}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {isRTL ? "مقبول" : "Pass"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={item.status === 'failed' ? 'destructive' : 'outline'}
-                      className="w-24"
-                      onClick={() => handleItemStatusChange(item.id, 'failed')}
-                    >
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      {isRTL ? "مرفوض" : "Fail"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+          {/* Inspection Item */}
+          <div className="text-center space-y-4">
+            <img
+              src={currentItem.image}
+              alt={currentItem.title}
+              className="mx-auto h-48 object-contain"
+            />
+            <div>
+              <h3 className="text-lg font-semibold">
+                {isRTL ? currentItem.titleAr : currentItem.title}
+              </h3>
+              <p className="text-muted-foreground">
+                {isRTL ? currentItem.descriptionAr : currentItem.description}
+              </p>
+            </div>
           </div>
 
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {isRTL ? "ملاحظات" : "Notes"}
-            </label>
-            <Textarea
-              placeholder={isRTL ? "إضافة ملاحظات..." : "Add notes..."}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="h-24"
-            />
+          {/* Response Buttons */}
+          <div className="space-y-4">
+            <div className="flex justify-center gap-4">
+              <Button
+                variant={responses[currentItem.id]?.status === "passed" ? "default" : "outline"}
+                className={cn(
+                  "w-32",
+                  responses[currentItem.id]?.status === "passed" && "bg-green-600"
+                )}
+                onClick={() => handleResponse("passed")}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {isRTL ? "مقبول" : "Pass"}
+              </Button>
+              <Button
+                variant={responses[currentItem.id]?.status === "failed" ? "destructive" : "outline"}
+                className="w-32"
+                onClick={() => handleResponse("failed")}
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                {isRTL ? "مرفوض" : "Fail"}
+              </Button>
+            </div>
+
+            {/* Add Comment Button */}
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCommentOpen(!isCommentOpen)}
+                className="text-muted-foreground"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                {isRTL ? "إضافة تعليق" : "Add Comment"}
+              </Button>
+            </div>
+
+            {/* Comment Box */}
+            {isCommentOpen && (
+              <div className="space-y-2">
+                <Textarea
+                  placeholder={isRTL ? "أضف تعليقًا..." : "Add a comment..."}
+                  value={responses[currentItem.id]?.comment || ""}
+                  onChange={(e) => handleComment(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            )}
           </div>
 
           {error && (
@@ -188,21 +341,36 @@ export function VehicleDailyChecklistDialog({
             </Alert>
           )}
 
-          <div className="flex justify-end gap-3">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between pt-4">
             <Button
               variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
+              onClick={handlePrevious}
+              disabled={currentStep === 0}
             >
-              {isRTL ? "إلغاء" : "Cancel"}
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              {isRTL ? "السابق" : "Previous"}
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="min-w-[100px]"
-            >
-              {isRTL ? "حفظ الفحص" : "Save Inspection"}
-            </Button>
+            {currentStep === checklistItems.length - 1 ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  isSubmitting ||
+                  Object.keys(responses).length !== checklistItems.length ||
+                  !mileage
+                }
+              >
+                {isRTL ? "إنهاء الفحص" : "Complete Inspection"}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleNext}
+                disabled={!responses[currentItem.id]?.status}
+              >
+                {isRTL ? "التالي" : "Next"}
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

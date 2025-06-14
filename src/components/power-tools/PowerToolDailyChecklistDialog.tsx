@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2 } from "lucide-react";
 import { PowerTool } from "@/types/equipment";
+import { cn } from "@/lib/utils";
 
 interface InspectionItem {
   id: string;
   description: string;
   isRequired: boolean;
-  status: 'not-checked' | 'passed' | 'failed';
+  status: "not-checked" | "passed" | "failed";
+  comment?: string; // Add comment field to support per-item comments
 }
 
 interface PowerToolDailyInspection {
@@ -20,19 +22,92 @@ interface PowerToolDailyInspection {
   operatorName: string;
   items: InspectionItem[];
   notes: string;
-  status: 'completed';
+  status: "completed";
   powerToolId: string;
 }
 
-const DEFAULT_POWER_TOOL_DAILY_ITEMS: InspectionItem[] = [
-  { id: 'pd1', description: 'Check power cord/battery condition', isRequired: true, status: 'not-checked' },
-  { id: 'pd2', description: 'Inspect tool body for damage', isRequired: true, status: 'not-checked' },
-  { id: 'pd3', description: 'Test power switch operation', isRequired: true, status: 'not-checked' },
-  { id: 'pd4', description: 'Check handle and grip condition', isRequired: true, status: 'not-checked' },
-  { id: 'pd5', description: 'Verify all safety guards in place', isRequired: true, status: 'not-checked' },
-  { id: 'pd6', description: 'Check cutting/working parts', isRequired: true, status: 'not-checked' },
-  { id: 'pd7', description: 'Test emergency stop (if applicable)', isRequired: true, status: 'not-checked' },
-  { id: 'pd8', description: 'Verify required safety accessories available', isRequired: true, status: 'not-checked' },
+// Define inspection items with images and bilingual descriptions
+const INSPECTION_ITEMS = [
+  {
+    id: "fire-extinguisher",
+    image: "/images/fire.png",
+    title: "Fire Extinguisher",
+    description: "Fire extinguisher available",
+    titleAr: "طفاية الحريق",
+    descriptionAr: "طفاية الحريق متوفرة",
+  },
+  {
+    id: "first-aid",
+    image: "/images/firstaid.png",
+    title: "First Aid Box",
+    description: "First aid box available",
+    titleAr: "صندوق الإسعافات الأولية",
+    descriptionAr: "صندوق الإسعافات الأولية متوفر",
+  },
+  {
+    id: "oil-check",
+    image: "/images/checkoil.png",
+    title: "Oil Check",
+    description: "Check oil level, no oil leak observed",
+    titleAr: "فحص الزيت",
+    descriptionAr: "فحص مستوى الزيت، لا يوجد تسرب للزيت",
+  },
+  {
+    id: "windshield",
+    image: "/images/windshield.png",
+    title: "Windshield",
+    description: "Windshield is clean and free from damages",
+    titleAr: "الزجاج الأمامي",
+    descriptionAr: "الزجاج الأمامي نظيف وخالي من الأضرار",
+  },
+  {
+    id: "lights",
+    image: "/images/headlights.png",
+    title: "Lights",
+    description: "Head lights, Indicator lights, break lights are operational",
+    titleAr: "الأضواء",
+    descriptionAr: "المصابيح الأمامية، إشارات الانعطاف، أضواء الفرامل تعمل",
+  },
+  {
+    id: "tires",
+    image: "/images/tirecondition.png",
+    title: "Tire Condition",
+    description: "Tyre condition – FRONT tyre / REAR tyre",
+    titleAr: "حالة الإطارات",
+    descriptionAr: "حالة الإطارات - الإطارات الأمامية / الخلفية",
+  },
+  {
+    id: "cabin",
+    image: "/images/closedcabin.png",
+    title: "Cabin",
+    description: "Closed cabin and Air Conditioning is working",
+    titleAr: "المقصورة",
+    descriptionAr: "المقصورة مغلقة ونظام التكييف يعمل",
+  },
+  {
+    id: "reverse-alarm",
+    image: "/images/reversealarm.png",
+    title: "Reverse Alarm",
+    description: "Reverse alarm, horn, mirrors are operational",
+    titleAr: "إنذار الرجوع للخلف",
+    descriptionAr: "إنذار الرجوع للخلف، البوق، المرايا تعمل",
+  },
+  {
+    id: "hoses",
+    image: "/images/housepipes.png",
+    title: "Hoses & Pipes",
+    description: "Hoses & pipe joints are in good condition",
+    titleAr: "الخراطيم والأنابيب",
+    descriptionAr: "الخراطيم ووصلات الأنابيب في حالة جيدة",
+  },
+  {
+    id: "bucket",
+    image: "/images/conditinofbucket.png",
+    title: "Bucket Condition",
+    description: "Condition of buckets (teeth protected)",
+    titleAr: "حالة الدلو",
+    descriptionAr: "حالة الدلاء (الأسنان محمية)",
+  },
 ];
 
 interface PowerToolDailyChecklistDialogProps {
@@ -46,143 +121,217 @@ export function PowerToolDailyChecklistDialog({
   powerTool,
   open,
   onOpenChange,
-  onSubmit
+  onSubmit,
 }: PowerToolDailyChecklistDialogProps) {
   const { currentLanguage } = useLanguage();
-  const isRTL = currentLanguage === 'ar';
-  const [notes, setNotes] = useState('');
-  const [items, setItems] = useState<InspectionItem[]>([...DEFAULT_POWER_TOOL_DAILY_ITEMS]);
+  const isRTL = currentLanguage === "ar";
+  const [currentStep, setCurrentStep] = useState(0);
+  const [responses, setResponses] = useState<
+    Record<string, { status?: "passed" | "failed"; comment: string }>
+  >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [isCommentOpen, setIsCommentOpen] = useState(false);
 
-  const handleItemStatusChange = (itemId: string, status: 'passed' | 'failed') => {
-    setItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, status } : item
-    ));
+  const currentItem = INSPECTION_ITEMS[currentStep];
+
+  // Handle status change for the current item
+  const handleResponse = (status: "passed" | "failed") => {
+    setResponses((prev) => ({
+      ...prev,
+      [currentItem.id]: {
+        status,
+        comment: prev[currentItem.id]?.comment || "",
+      },
+    }));
+  };
+
+  // Handle comment input for the current item
+  const handleComment = (comment: string) => {
+    setResponses((prev) => ({
+      ...prev,
+      [currentItem.id]: {
+        status: prev[currentItem.id]?.status,
+        comment,
+      },
+    }));
+  };
+
+  const handleNext = () => {
+    if (currentStep < INSPECTION_ITEMS.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+      setIsCommentOpen(false); // Close comment section when moving to next item
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+      setIsCommentOpen(false); // Close comment section when moving to previous item
+    }
   };
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      setError('');
+      setError("");
 
-      // Validate that all required items have been checked
-      const uncheckedRequired = items.filter(item => 
-        item.isRequired && item.status === 'not-checked'
+      // Validate that all required items have a status
+      const uncheckedRequired = INSPECTION_ITEMS.filter(
+        (item) => item.isRequired && !responses[item.id]?.status
       );
 
       if (uncheckedRequired.length > 0) {
-        setError(isRTL 
-          ? 'يرجى إكمال جميع العناصر المطلوبة قبل التقديم'
-          : 'Please complete all required items before submitting'
+        setError(
+          isRTL
+            ? "يرجى إكمال جميع العناصر المطلوبة قبل التقديم"
+            : "Please complete all required items before submitting"
         );
         return;
       }
 
       const inspection: PowerToolDailyInspection = {
         date: new Date().toISOString(),
-        operatorId: 'current-user-id', // This should come from auth context
-        operatorName: powerTool.operatorName || 'Unknown Operator',
-        items,
-        notes,
-        status: 'completed',
-        powerToolId: powerTool.id
+        operatorId: "current-user-id",
+        operatorName: powerTool.operatorName || "Unknown Operator",
+        items: INSPECTION_ITEMS.map((item) => ({
+          id: item.id,
+          description: item.description,
+          status: responses[item.id]?.status || "not-checked",
+          isRequired: item.isRequired,
+          comment: responses[item.id]?.comment || "",
+        })),
+        notes: "", // Set to empty string to align with DailyChecklistDialog
+        status: "completed",
+        powerToolId: powerTool.id,
       };
 
       await onSubmit(inspection);
       onOpenChange(false);
+      setCurrentStep(0);
+      setResponses({});
+      setIsCommentOpen(false);
     } catch (err) {
-      setError(isRTL 
-        ? 'حدث خطأ أثناء حفظ قائمة التحقق'
-        : 'An error occurred while saving the checklist'
+      setError(
+        isRTL
+          ? "حدث خطأ أثناء حفظ قائمة التحقق"
+          : "An error occurred while saving the checklist"
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!powerTool) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl">
-            {isRTL ? "قائمة التحقق اليومية للأدوات الكهربائية" : "Power Tool Daily Inspection Checklist"}
+          <DialogTitle>
+            {isRTL ? "قائمة التحقق اليومية للأدوات الكهربائية" : "Power Tool Daily Inspection"}
+            <span className="text-sm text-muted-foreground ml-2">
+              {currentStep + 1} / {INSPECTION_ITEMS.length}
+            </span>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Power Tool Info */}
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-muted/50 p-4 rounded-lg">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">{isRTL ? "الأداة:" : "Tool:"}</span>
+                <span className="text-muted-foreground">
+                  {isRTL ? "الأداة:" : "Tool:"}
+                </span>
                 <span className="font-medium ml-2">{powerTool.toolName}</span>
               </div>
               <div>
-                <span className="text-gray-600">{isRTL ? "رقم الأداة:" : "Tool ID:"}</span>
+                <span className="text-muted-foreground">
+                  {isRTL ? "رقم الأداة:" : "Tool ID:"}
+                </span>
                 <span className="font-medium ml-2">{powerTool.toolId}</span>
               </div>
               <div>
-                <span className="text-gray-600">{isRTL ? "الموديل:" : "Model:"}</span>
+                <span className="text-muted-foreground">
+                  {isRTL ? "الموديل:" : "Model:"}
+                </span>
                 <span className="font-medium ml-2">{powerTool.modelNumber}</span>
               </div>
               <div>
-                <span className="text-gray-600">{isRTL ? "المصنع:" : "Manufacturer:"}</span>
+                <span className="text-muted-foreground">
+                  {isRTL ? "المصنع:" : "Manufacturer:"}
+                </span>
                 <span className="font-medium ml-2">{powerTool.manufacturer}</span>
               </div>
             </div>
           </div>
 
-          {/* Checklist Items */}
-          <div className="space-y-4">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-1">
-                    <p className="font-medium">
-                      {item.description}
-                      {item.isRequired && <span className="text-red-500 ml-1">*</span>}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant={item.status === 'passed' ? 'default' : 'outline'}
-                      className="w-24"
-                      onClick={() => handleItemStatusChange(item.id, 'passed')}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {isRTL ? "نعم" : "Yes"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={item.status === 'failed' ? 'destructive' : 'outline'}
-                      className="w-24"
-                      onClick={() => handleItemStatusChange(item.id, 'failed')}
-                    >
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      {isRTL ? "لا" : "No"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+          {/* Inspection Item */}
+          <div className="text-center space-y-4">
+            <img
+              src={currentItem.image}
+              alt={currentItem.title}
+              className="mx-auto h-48 object-contain"
+            />
+            <div>
+              <h3 className="text-lg font-semibold">
+                {isRTL ? currentItem.titleAr : currentItem.title}
+              </h3>
+              <p className="text-muted-foreground">
+                {isRTL ? currentItem.descriptionAr : currentItem.description}
+              </p>
+            </div>
           </div>
 
-          {/* Notes Section */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {isRTL ? "ملاحظات" : "Notes"}
-            </label>
-            <Textarea
-              placeholder={isRTL ? "إضافة ملاحظات..." : "Add notes..."}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="h-24"
-            />
+          {/* Response Buttons */}
+          <div className="space-y-4">
+            <div className="flex justify-center gap-4">
+              <Button
+                variant={responses[currentItem.id]?.status === "passed" ? "default" : "outline"}
+                className={cn(
+                  "w-32",
+                  responses[currentItem.id]?.status === "passed" && "bg-green-600"
+                )}
+                onClick={() => handleResponse("passed")}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {isRTL ? "نعم" : "Yes"}
+              </Button>
+              <Button
+                variant={responses[currentItem.id]?.status === "failed" ? "destructive" : "outline"}
+                className="w-32"
+                onClick={() => handleResponse("failed")}
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                {isRTL ? "لا" : "No"}
+              </Button>
+            </div>
+
+            {/* Add Comment Button */}
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCommentOpen(!isCommentOpen)}
+                className="text-muted-foreground"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                {isRTL ? "إضافة تعليق" : "Add Comment"}
+              </Button>
+            </div>
+
+            {/* Comment Box */}
+            {isCommentOpen && (
+              <div className="space-y-2">
+                <Textarea
+                  placeholder={isRTL ? "أضف تعليقًا..." : "Add a comment..."}
+                  value={responses[currentItem.id]?.comment || ""}
+                  onChange={(e) => handleComment(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            )}
           </div>
 
           {error && (
@@ -192,21 +341,35 @@ export function PowerToolDailyChecklistDialog({
             </Alert>
           )}
 
-          <div className="flex justify-end gap-3">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between pt-4">
             <Button
               variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
+              onClick={handlePrevious}
+              disabled={currentStep === 0}
             >
-              {isRTL ? "إلغاء" : "Cancel"}
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              {isRTL ? "السابق" : "Previous"}
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="min-w-[100px]"
-            >
-              {isRTL ? "حفظ" : "Save"}
-            </Button>
+            {currentStep === INSPECTION_ITEMS.length - 1 ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  isSubmitting ||
+                  Object.keys(responses).length !== INSPECTION_ITEMS.length
+                }
+              >
+                {isRTL ? "إنهاء الفحص" : "Complete Inspection"}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleNext}
+                disabled={!responses[currentItem.id]?.status}
+              >
+                {isRTL ? "التالي" : "Next"}
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
