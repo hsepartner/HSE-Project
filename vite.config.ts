@@ -15,22 +15,31 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     {
       name: 'generate-spa-redirect',
-      closeBundle() {
-        // Create vercel.json in the dist folder
-        const vercelConfig = {
-          "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-        };
-        fs.writeFileSync(
-          path.resolve(__dirname, 'dist/vercel.json'), 
-          JSON.stringify(vercelConfig, null, 2)
-        );
-        
-        // Also create a _redirects file as a fallback
-        fs.writeFileSync(
-          path.resolve(__dirname, 'dist/_redirects'),
-          '/* /index.html 200'
-        );
-      }
+     closeBundle() {
+  const distDir = path.resolve(__dirname, 'dist');
+
+  // Ensure the dist directory exists
+  if (!fs.existsSync(distDir)) {
+    fs.mkdirSync(distDir, { recursive: true });
+  }
+
+  const vercelConfig = {
+    rewrites: [{ source: "/(.*)", destination: "/index.html" }]
+  };
+
+  // Write vercel.json
+  fs.writeFileSync(
+    path.join(distDir, 'vercel.json'),
+    JSON.stringify(vercelConfig, null, 2)
+  );
+
+  // Write _redirects file as fallback
+  fs.writeFileSync(
+    path.join(distDir, '_redirects'),
+    '/* /index.html 200'
+  );
+}
+
     }
   ].filter(Boolean),
   resolve: {
