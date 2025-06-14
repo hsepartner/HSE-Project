@@ -2,15 +2,14 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2, Car } from "lucide-react";
-import type { Vehicle } from "@/types/vehicle";
-import { DEFAULT_VEHICLE_DAILY_CHECKLIST_ITEMS, InspectionItem, VehicleDailyInspection } from "@/types/vehicleInspection";
+import { AlertCircle, ChevronLeft, ChevronRight, Car , CheckCircle2 } from "lucide-react";
+import { Vehicle } from "@/types/vehicle";
+import { VehicleDailyInspection } from "@/types/vehicleInspection";
 import { cn } from "@/lib/utils";
 
-// Define inspection items with images and bilingual descriptions
+// Define the inspection items with their respective images
 const INSPECTION_ITEMS = [
   {
     id: "fire-extinguisher",
@@ -105,132 +104,119 @@ export function VehicleDailyChecklistDialog({
   vehicle,
   open,
   onOpenChange,
-  onSubmit,
+  onSubmit
 }: VehicleDailyChecklistDialogProps) {
   const { currentLanguage } = useLanguage();
-  const isRTL = currentLanguage === "ar";
+  const isRTL = currentLanguage === 'ar';
+  
   const [currentStep, setCurrentStep] = useState(0);
-  const [mileage, setMileage] = useState("");
-  const [responses, setResponses] = useState<
-    Record<string, { status?: "passed" | "failed"; comment: string }>
-  >({});
+  const [responses, setResponses] = useState<Record<string, {
+    status?: 'passed' | 'failed';
+    comment: string;
+  }>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [showNextInsteadOfNo, setShowNextInsteadOfNo] = useState(false);
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [mileage, setMileage] = useState('');
 
-  const checklistItems = vehicle.category ? INSPECTION_ITEMS[vehicle.category] || [] : [];
-  const currentItem = checklistItems[currentStep];
+  const currentItem = INSPECTION_ITEMS[currentStep];
 
-  // Handle status change for the current item
-  const handleResponse = (status: "passed" | "failed") => {
-    setResponses((prev) => ({
+  const handleResponse = (status: 'passed' | 'failed') => {
+    setResponses(prev => ({
       ...prev,
       [currentItem.id]: {
         status,
-        comment: prev[currentItem.id]?.comment || "",
-      },
+        comment: prev[currentItem.id]?.comment || ''
+      }
     }));
+
+    if (status === 'failed') {
+      setShowNextInsteadOfNo(true);
+      setShowCommentBox(true);
+    } else if (status === 'passed' && currentStep < INSPECTION_ITEMS.length - 1) {
+      setCurrentStep(prev => prev + 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
+    }
   };
 
-  // Handle comment input for the current item
   const handleComment = (comment: string) => {
-    setResponses((prev) => ({
+    setResponses(prev => ({
       ...prev,
       [currentItem.id]: {
-        status: prev[currentItem.id]?.status,
-        comment,
-      },
+        ...prev[currentItem.id],
+        comment
+      }
     }));
   };
 
   const handleNext = () => {
-    if (currentStep < checklistItems.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-      setIsCommentOpen(false); // Close comment section when moving to next item
+    if (currentStep < INSPECTION_ITEMS.length - 1) {
+      setCurrentStep(prev => prev + 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-      setIsCommentOpen(false); // Close comment section when moving to previous item
+      setCurrentStep(prev => prev - 1);
     }
   };
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      setError("");
+      setError('');
 
-      // Validate mileage
       if (!mileage || isNaN(Number(mileage))) {
-        setError(
-          isRTL
-            ? "يرجى إدخال قراءة عداد المسافات"
-            : "Please enter the current mileage reading"
-        );
-        return;
-      }
-
-      // Validate that all required items have a status
-      const uncheckedRequired = checklistItems.filter(
-        (item) => item.isRequired && !responses[item.id]?.status
-      );
-
-      if (uncheckedRequired.length > 0) {
-        setError(
-          isRTL
-            ? "يرجى إكمال جميع العناصر المطلوبة قبل التقديم"
-            : "Please complete all required items before submitting"
+        setError(isRTL 
+          ? 'يرجى إدخال قراءة عداد المسافات'
+          : 'Please enter the current mileage reading'
         );
         return;
       }
 
       const inspection: VehicleDailyInspection = {
         date: new Date().toISOString(),
-        driverId: "current-user-id",
-        driverName: vehicle.assignedTo || "Unknown Driver",
-        items: checklistItems.map((item) => ({
-          id: item.id,
-          description: item.description,
-          status: responses[item.id]?.status || "not-checked",
-          comment: responses[item.id]?.comment || "",
-          isRequired: item.isRequired,
+        driverId: 'current-user-id',
+        driverName: vehicle.assignedTo || 'Unknown Driver',
+        items: Object.entries(responses).map(([id, response]) => ({
+          id,
+          description: INSPECTION_ITEMS.find(item => item.id === id)?.description || '',
+          status: response.status,
+          comment: response.comment,
+          isRequired: true
         })),
-        notes: "",
-        status: "completed",
+        status: 'completed',
         vehicleId: vehicle.id,
         mileage: Number(mileage),
+        notes: ''
       };
 
       await onSubmit(inspection);
       onOpenChange(false);
       setCurrentStep(0);
       setResponses({});
-      setMileage("");
-      setIsCommentOpen(false);
     } catch (err) {
-      setError(
-        isRTL
-          ? "حدث خطأ أثناء حفظ قائمة التحقق"
-          : "An error occurred while saving the checklist"
+      setError(isRTL 
+        ? 'حدث خطأ أثناء حفظ قائمة التحقق'
+        : 'An error occurred while saving the checklist'
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!vehicle || !currentItem) return null;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Car className="h-5 w-5" />
-            {isRTL ? "قائمة التحقق اليومية للمركبة" : "Daily Vehicle Inspection"}
+          <DialogTitle>
+            {isRTL ? "الفحص اليومي للمركبة" : "Daily Vehicle Inspection"}
             <span className="text-sm text-muted-foreground ml-2">
-              {currentStep + 1} / {checklistItems.length}
+              {currentStep + 1} / {INSPECTION_ITEMS.length}
             </span>
           </DialogTitle>
         </DialogHeader>
@@ -254,19 +240,6 @@ export function VehicleDailyChecklistDialog({
             </div>
           </div>
 
-          {/* Mileage Reading */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {isRTL ? "قراءة عداد المسافات" : "Current Mileage"}
-            </label>
-            <Input
-              type="number"
-              value={mileage}
-              onChange={(e) => setMileage(e.target.value)}
-              placeholder={isRTL ? "أدخل قراءة عداد المسافات" : "Enter current mileage reading"}
-            />
-          </div>
-
           {/* Inspection Item */}
           <div className="text-center space-y-4">
             <img
@@ -288,51 +261,68 @@ export function VehicleDailyChecklistDialog({
           <div className="space-y-4">
             <div className="flex justify-center gap-4">
               <Button
-                variant={responses[currentItem.id]?.status === "passed" ? "default" : "outline"}
-                className={cn(
-                  "w-32",
-                  responses[currentItem.id]?.status === "passed" && "bg-green-600"
-                )}
-                onClick={() => handleResponse("passed")}
+                variant={responses[currentItem.id]?.status === 'passed' ? 'default' : 'outline'}
+                className={cn("w-32", responses[currentItem.id]?.status === 'passed' && "bg-green-600")}
+                onClick={() => handleResponse('passed')}
               >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {isRTL ? "مقبول" : "Pass"}
+                {isRTL ? "نعم" : "Yes"}
               </Button>
-              <Button
-                variant={responses[currentItem.id]?.status === "failed" ? "destructive" : "outline"}
-                className="w-32"
-                onClick={() => handleResponse("failed")}
-              >
-                <AlertCircle className="h-4 w-4 mr-2" />
-                {isRTL ? "مرفوض" : "Fail"}
-              </Button>
-            </div>
-
-            {/* Add Comment Button */}
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCommentOpen(!isCommentOpen)}
-                className="text-muted-foreground"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                {isRTL ? "إضافة تعليق" : "Add Comment"}
-              </Button>
+              {showNextInsteadOfNo ? (
+                <Button
+                  variant="outline"
+                  className="w-32"
+                  onClick={handleNext}
+                >
+                  {isRTL ? "التالي" : "Next"}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant={responses[currentItem.id]?.status === 'failed' ? 'destructive' : 'outline'}
+                    className="w-32"
+                    onClick={() => handleResponse('failed')}
+                  >
+                    {isRTL ? "لا" : "No"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-32"
+                    onClick={() => setShowCommentBox(true)}
+                  >
+                    {isRTL ? "تعليق" : "Comment"}
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Comment Box */}
-            {isCommentOpen && (
+            {showCommentBox && (
               <div className="space-y-2">
                 <Textarea
                   placeholder={isRTL ? "أضف تعليقًا..." : "Add a comment..."}
-                  value={responses[currentItem.id]?.comment || ""}
+                  value={responses[currentItem.id]?.comment || ''}
                   onChange={(e) => handleComment(e.target.value)}
                   className="min-h-[100px]"
                 />
               </div>
             )}
           </div>
+
+          {/* Mileage Input - Only on the last step */}
+          {currentStep === INSPECTION_ITEMS.length - 1 && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">
+                {isRTL ? "قراءة عداد المسافات" : "Current Mileage"}
+              </label>
+              <input
+                type="number"
+                className="w-full p-2 border rounded"
+                value={mileage}
+                onChange={(e) => setMileage(e.target.value)}
+                placeholder={isRTL ? "أدخل قراءة عداد المسافات" : "Enter current mileage"}
+              />
+            </div>
+          )}
 
           {error && (
             <Alert variant="destructive">
@@ -351,21 +341,17 @@ export function VehicleDailyChecklistDialog({
               <ChevronLeft className="h-4 w-4 mr-2" />
               {isRTL ? "السابق" : "Previous"}
             </Button>
-            {currentStep === checklistItems.length - 1 ? (
+            {currentStep === INSPECTION_ITEMS.length - 1 ? (
               <Button
                 onClick={handleSubmit}
-                disabled={
-                  isSubmitting ||
-                  Object.keys(responses).length !== checklistItems.length ||
-                  !mileage
-                }
+                disabled={isSubmitting || Object.keys(responses).length !== INSPECTION_ITEMS.length || !mileage}
               >
                 {isRTL ? "إنهاء الفحص" : "Complete Inspection"}
               </Button>
             ) : (
               <Button
                 onClick={handleNext}
-                disabled={!responses[currentItem.id]?.status}
+                disabled={!responses[currentItem.id]}
               >
                 {isRTL ? "التالي" : "Next"}
                 <ChevronRight className="h-4 w-4 ml-2" />

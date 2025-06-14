@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/hooks/use-language";
@@ -106,110 +106,109 @@ export function LiftingAccessoryDailyChecklistDialog({
   onOpenChange,
   onSubmit,
 }: Props) {
+  // Add early return if accessory is null
+  if (!accessory || !open) return null;
+
   const { currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
+  
   const [currentStep, setCurrentStep] = useState(0);
-  const [responses, setResponses] = useState<
-    Record<string, { status?: "passed" | "failed"; comment: string }>
-  >({});
+  const [responses, setResponses] = useState<Record<string, {
+    status?: 'passed' | 'failed';
+    comment: string;
+  }>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [showNextInsteadOfNo, setShowNextInsteadOfNo] = useState(false);
+  const [showCommentBox, setShowCommentBox] = useState(false);
 
   const currentItem = INSPECTION_ITEMS[currentStep];
 
-  // Handle status change for the current item
-  const handleResponse = (status: "passed" | "failed") => {
-    setResponses((prev) => ({
+  const handleResponse = (status: 'passed' | 'failed') => {
+    setResponses(prev => ({
       ...prev,
       [currentItem.id]: {
         status,
-        comment: prev[currentItem.id]?.comment || "",
-      },
+        comment: prev[currentItem.id]?.comment || ''
+      }
     }));
+
+    if (status === 'failed') {
+      setShowNextInsteadOfNo(true);
+      setShowCommentBox(true);
+    } else if (status === 'passed' && currentStep < INSPECTION_ITEMS.length - 1) {
+      setCurrentStep(prev => prev + 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
+    }
   };
 
-  // Handle comment input for the current item
   const handleComment = (comment: string) => {
-    setResponses((prev) => ({
+    setResponses(prev => ({
       ...prev,
       [currentItem.id]: {
         status: prev[currentItem.id]?.status,
-        comment,
-      },
+        comment
+      }
     }));
   };
 
   const handleNext = () => {
     if (currentStep < INSPECTION_ITEMS.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-      setIsCommentOpen(false); // Close comment section when moving to next item
+      setCurrentStep(prev => prev + 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-      setIsCommentOpen(false); // Close comment section when moving to previous item
+      setCurrentStep(prev => prev - 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
     }
   };
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      setError("");
-
-      // Check if all required items have a status
-      const uncheckedRequired = INSPECTION_ITEMS.filter(
-        (item) => item.isRequired && !responses[item.id]?.status
-      );
-
-      if (uncheckedRequired.length > 0) {
-        setError(
-          isRTL
-            ? "يرجى إكمال جميع العناصر المطلوبة قبل التقديم"
-            : "Please complete all required items before submitting"
-        );
-        return;
-      }
+      setError('');
 
       const inspection: DailyInspection = {
         date: new Date().toISOString(),
-        operatorId: "current-user-id",
-        operatorName: "Current Operator",
+        operatorId: 'current-user-id',
+        operatorName: 'Current Operator',
         toolName: accessory.accessoryName,
         equipmentId: accessory.accessoryId,
         serialNumber: accessory.accessoryId,
         manufacturer: accessory.manufacturer,
         modelNumber: accessory.modelNumber,
-        items: INSPECTION_ITEMS.map((item) => ({
-          id: item.id,
-          description: item.description,
-          status: responses[item.id]?.status || "not-checked",
-          comment: responses[item.id]?.comment || "",
-          isRequired: item.isRequired,
+        items: Object.entries(responses).map(([id, response]) => ({
+          id,
+          description: INSPECTION_ITEMS.find(item => item.id === id)?.description || '',
+          status: response.status,
+          comment: response.comment,
+          isRequired: true
         })),
-        notes: "",
-        status: "completed",
+        notes: '',
+        status: 'completed'
       };
 
       await onSubmit(inspection);
       onOpenChange(false);
       setCurrentStep(0);
       setResponses({});
-      setIsCommentOpen(false);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
     } catch (err) {
-      setError(
-        isRTL
-          ? "حدث خطأ أثناء حفظ قائمة التحقق"
-          : "An error occurred while saving the checklist"
+      setError(isRTL 
+        ? 'حدث خطأ أثناء حفظ قائمة التحقق'
+        : 'An error occurred while saving the checklist'
       );
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (!accessory) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -221,6 +220,12 @@ export function LiftingAccessoryDailyChecklistDialog({
               {currentStep + 1} / {INSPECTION_ITEMS.length}
             </span>
           </DialogTitle>
+          <DialogDescription>
+            {isRTL 
+              ? "قم بفحص كل عنصر وحدد ما إذا كان يجتاز الفحص أم لا"
+              : "Check each item and indicate whether it passes inspection or not"
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -238,18 +243,6 @@ export function LiftingAccessoryDailyChecklistDialog({
                   {isRTL ? "رقم الملحق:" : "Accessory ID:"}
                 </span>
                 <span className="font-medium ml-2">{accessory.accessoryId}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {isRTL ? "الموديل:" : "Model:"}
-                </span>
-                <span className="font-medium ml-2">{accessory.modelNumber}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {isRTL ? "المصنع:" : "Manufacturer:"}
-                </span>
-                <span className="font-medium ml-2">{accessory.manufacturer}</span>
               </div>
             </div>
           </div>
@@ -275,45 +268,46 @@ export function LiftingAccessoryDailyChecklistDialog({
           <div className="space-y-4">
             <div className="flex justify-center gap-4">
               <Button
-                variant={responses[currentItem.id]?.status === "passed" ? "default" : "outline"}
-                className={cn(
-                  "w-32",
-                  responses[currentItem.id]?.status === "passed" && "bg-green-600"
-                )}
-                onClick={() => handleResponse("passed")}
+                variant={responses[currentItem.id]?.status === 'passed' ? 'default' : 'outline'}
+                className={cn("w-32", responses[currentItem.id]?.status === 'passed' && "bg-green-600")}
+                onClick={() => handleResponse('passed')}
               >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
                 {isRTL ? "نعم" : "Yes"}
               </Button>
-              <Button
-                variant={responses[currentItem.id]?.status === "failed" ? "destructive" : "outline"}
-                className="w-32"
-                onClick={() => handleResponse("failed")}
-              >
-                <AlertCircle className="h-4 w-4 mr-2" />
-                {isRTL ? "لا" : "No"}
-              </Button>
-            </div>
-
-            {/* Add Comment Button */}
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCommentOpen(!isCommentOpen)}
-                className="text-muted-foreground"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                {isRTL ? "إضافة تعليق" : "Add Comment"}
-              </Button>
+              {showNextInsteadOfNo ? (
+                <Button
+                  variant="outline"
+                  className="w-32"
+                  onClick={handleNext}
+                >
+                  {isRTL ? "التالي" : "Next"}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant={responses[currentItem.id]?.status === 'failed' ? 'destructive' : 'outline'}
+                    className="w-32"
+                    onClick={() => handleResponse('failed')}
+                  >
+                    {isRTL ? "لا" : "No"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-32"
+                    onClick={() => setShowCommentBox(true)}
+                  >
+                    {isRTL ? "تعليق" : "Comment"}
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Comment Box */}
-            {isCommentOpen && (
+            {showCommentBox && (
               <div className="space-y-2">
                 <Textarea
                   placeholder={isRTL ? "أضف تعليقًا..." : "Add a comment..."}
-                  value={responses[currentItem.id]?.comment || ""}
+                  value={responses[currentItem.id]?.comment || ''}
                   onChange={(e) => handleComment(e.target.value)}
                   className="min-h-[100px]"
                 />
@@ -341,17 +335,14 @@ export function LiftingAccessoryDailyChecklistDialog({
             {currentStep === INSPECTION_ITEMS.length - 1 ? (
               <Button
                 onClick={handleSubmit}
-                disabled={
-                  isSubmitting ||
-                  Object.keys(responses).length !== INSPECTION_ITEMS.length
-                }
+                disabled={isSubmitting || Object.keys(responses).length !== INSPECTION_ITEMS.length}
               >
                 {isRTL ? "إنهاء الفحص" : "Complete Inspection"}
               </Button>
             ) : (
               <Button
                 onClick={handleNext}
-                disabled={!responses[currentItem.id]?.status}
+                disabled={!responses[currentItem.id]}
               >
                 {isRTL ? "التالي" : "Next"}
                 <ChevronRight className="h-4 w-4 ml-2" />

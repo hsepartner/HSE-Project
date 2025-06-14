@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Equipment } from "@/types/equipment";
 import { DailyInspection } from "@/types/inspection";
 import { cn } from "@/lib/utils";
@@ -110,19 +110,17 @@ export function DailyChecklistDialog({
   const isRTL = currentLanguage === 'ar';
   
   const [currentStep, setCurrentStep] = useState(0);
-  // Update the responses state type to include separate comment tracking
   const [responses, setResponses] = useState<Record<string, {
     status?: 'passed' | 'failed';
     comment: string;
   }>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  // Add this state near the top with other state declarations
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [showNextInsteadOfNo, setShowNextInsteadOfNo] = useState(false);
+  const [showCommentBox, setShowCommentBox] = useState(false);
 
   const currentItem = INSPECTION_ITEMS[currentStep];
 
-  // Update the handleResponse function to preserve comments
   const handleResponse = (status: 'passed' | 'failed') => {
     setResponses(prev => ({
       ...prev,
@@ -131,9 +129,17 @@ export function DailyChecklistDialog({
         comment: prev[currentItem.id]?.comment || ''
       }
     }));
+
+    if (status === 'failed') {
+      setShowNextInsteadOfNo(true);
+      setShowCommentBox(true); // Show comment box when "No" is clicked
+    } else if (status === 'passed' && currentStep < INSPECTION_ITEMS.length - 1) {
+      setCurrentStep(prev => prev + 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
+    }
   };
 
-  // Update handleComment function
   const handleComment = (comment: string) => {
     setResponses(prev => ({
       ...prev,
@@ -147,12 +153,16 @@ export function DailyChecklistDialog({
   const handleNext = () => {
     if (currentStep < INSPECTION_ITEMS.length - 1) {
       setCurrentStep(prev => prev + 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
     }
   };
 
@@ -181,6 +191,8 @@ export function DailyChecklistDialog({
       onOpenChange(false);
       setCurrentStep(0);
       setResponses({});
+      setShowNextInsteadOfNo(false);
+      setShowCommentBox(false);
     } catch (err) {
       setError(isRTL 
         ? 'حدث خطأ أثناء حفظ قائمة التحقق'
@@ -249,30 +261,36 @@ export function DailyChecklistDialog({
               >
                 {isRTL ? "نعم" : "Yes"}
               </Button>
-              <Button
-                variant={responses[currentItem.id]?.status === 'failed' ? 'destructive' : 'outline'}
-                className="w-32"
-                onClick={() => handleResponse('failed')}
-              >
-                {isRTL ? "لا" : "No"}
-              </Button>
-            </div>
-
-            {/* Add Comment Button */}
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCommentOpen(!isCommentOpen)}
-                className="text-muted-foreground"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                {isRTL ? "إضافة تعليق" : "Add Comment"}
-              </Button>
+              {showNextInsteadOfNo ? (
+                <Button
+                  variant="outline"
+                  className="w-32"
+                  onClick={handleNext}
+                >
+                  {isRTL ? "التالي" : "Next"}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant={responses[currentItem.id]?.status === 'failed' ? 'destructive' : 'outline'}
+                    className="w-32"
+                    onClick={() => handleResponse('failed')}
+                  >
+                    {isRTL ? "لا" : "No"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-32"
+                    onClick={() => setShowCommentBox(true)}
+                  >
+                    {isRTL ? "تعليق" : "Comment"}
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Comment Box */}
-            {isCommentOpen && (
+            {showCommentBox && (
               <div className="space-y-2">
                 <Textarea
                   placeholder={isRTL ? "أضف تعليقًا..." : "Add a comment..."}
