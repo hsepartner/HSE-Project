@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import type { PowerTool } from "@/types/equipment";
+import type { MonthlyInspection, InspectionItem } from "@/types/inspection";
+import type { PowerTool } from "@/types/power-tools";
 import { cn } from "@/lib/utils";
 
 // Using the same inspection items as MonthlyInspectionDialog
@@ -18,6 +19,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Check if operator has valid driving license",
     titleAr: "رخصة قيادة سارية",
     descriptionAr: "تحقق من امتلاك المشغل لرخصة قيادة سارية",
+    isRequired: true,
   },
   {
     id: "calibration",
@@ -26,6 +28,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Verify calibration certificate validity",
     titleAr: "شهادة معايرة سارية من طرف ثالث",
     descriptionAr: "التحقق من صلاحية شهادة المعايرة",
+    isRequired: true,
   },
   {
     id: "operator-competency",
@@ -34,6 +37,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Ensure operator competency",
     titleAr: "التحقق من كفاءة السائق",
     descriptionAr: "ضمان كفاءة المشغل",
+    isRequired: true,
   },
   {
     id: "cab-interior",
@@ -42,6 +46,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Inspect cab cleanliness and seatbelts",
     titleAr: "نظافة الكابينة والمقاعد وأحزمة الأمان",
     descriptionAr: "فحص نظافة الكابينة وأحزمة الأمان",
+    isRequired: true,
   },
   {
     id: "cab-glass",
@@ -50,6 +55,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Check cab glass and mirrors condition",
     titleAr: "زجاج الكابينة والمرايا الخلفية",
     descriptionAr: "فحص حالة الزجاج والمرايا",
+    isRequired: true,
   },
   {
     id: "control-levers",
@@ -58,6 +64,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Test control levers functionality",
     titleAr: "عناصر التحكم (الرافعات)",
     descriptionAr: "اختبار عمل الرافعات",
+    isRequired: true,
   },
   {
     id: "handbrake",
@@ -66,6 +73,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Ensure hand brake is functional",
     titleAr: "فرامل اليد",
     descriptionAr: "التأكد من أن فرامل اليد تعمل",
+    isRequired: true,
   },
   {
     id: "fire-extinguisher",
@@ -74,6 +82,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Check fire extinguisher presence and status",
     titleAr: "طفاية حريق",
     descriptionAr: "التحقق من وجود طفاية الحريق وصلاحيتها",
+    isRequired: true,
   },
   {
     id: "warning-devices",
@@ -82,6 +91,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Test warning devices like horn and alarms",
     titleAr: "أجهزة التحذير – البوق، إنذار الرجوع، إشارات المرور",
     descriptionAr: "اختبار أجهزة التحذير مثل البوق والإنذارات",
+    isRequired: true,
   },
   {
     id: "warning-signs",
@@ -90,6 +100,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Inspect safety warning signs",
     titleAr: "لافتات التحذير",
     descriptionAr: "فحص لافتات السلامة التحذيرية",
+    isRequired: true,
   },
   {
     id: "brakes",
@@ -98,6 +109,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Inspect braking system",
     titleAr: "الفرامل",
     descriptionAr: "فحص نظام الفرامل",
+    isRequired: true,
   },
   {
     id: "motor-condition",
@@ -106,6 +118,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Check engine/motor condition",
     titleAr: "حالة المحرك",
     descriptionAr: "التحقق من حالة المحرك",
+    isRequired: true,
   },
   {
     id: "hydraulic-system",
@@ -114,6 +127,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Inspect hydraulic system",
     titleAr: "نظام الهيدروليك",
     descriptionAr: "فحص نظام الهيدروليك",
+    isRequired: true,
   },
   {
     id: "hydraulic-leaks",
@@ -122,6 +136,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Ensure hydraulic links are leak-free",
     titleAr: "عدم وجود تسرب في الوصلات",
     descriptionAr: "التحقق من عدم تسرب الزيت في الوصلات",
+    isRequired: true,
   },
   {
     id: "bucket-components",
@@ -130,6 +145,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Check bucket, axles, and joints",
     titleAr: "مكونات المعدات - الدلو، المحاور، والوصلات",
     descriptionAr: "فحص الدلو والمحاور والوصلات",
+    isRequired: true,
   },
   {
     id: "access-platforms",
@@ -138,6 +154,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Inspect access platforms for safety",
     titleAr: "منصات الوصول",
     descriptionAr: "فحص منصات الوصول من حيث السلامة",
+    isRequired: true,
   },
   {
     id: "tires-trackpads",
@@ -146,6 +163,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Check tires or track pads condition",
     titleAr: "حالة الإطارات / وسائد الجنزير",
     descriptionAr: "فحص حالة الإطارات أو وسائد الجنزير",
+    isRequired: true,
   },
   {
     id: "outriggers",
@@ -154,6 +172,7 @@ const POWER_TOOL_INSPECTION_ITEMS = [
     description: "Inspect outriggers or stabilizers",
     titleAr: "الدعامات الجانبية",
     descriptionAr: "فحص الدعامات أو المثبتات",
+    isRequired: true,
   },
 ];
 
@@ -161,11 +180,12 @@ interface PowerToolMonthlyInspection {
   date: string;
   technicianId: string;
   technicianName: string;
-  items: {
-    id: string;
-    status: 'passed' | 'failed' | 'not-checked';
-    comment: string;
-  }[];
+  equipmentId: string;
+  toolName: string;
+  serialNumber: string;
+  manufacturer: string;
+  modelNumber: string;
+  items: InspectionItem[];
   status: 'completed';
   powerToolId: string;
   nextInspectionDate: string;
@@ -176,7 +196,7 @@ interface PowerToolMonthlyInspectionDialogProps {
   powerTool: PowerTool;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (inspection: PowerToolMonthlyInspection) => Promise<void>;
+  onSubmit: (inspection: MonthlyInspection) => Promise<void>;
 }
 
 export function PowerToolMonthlyInspectionDialog({
@@ -262,10 +282,17 @@ export function PowerToolMonthlyInspectionDialog({
         date: new Date().toISOString(),
         technicianId: 'current-user-id',
         technicianName: 'Current Technician', // This should come from auth context
+        equipmentId: powerTool.id,
+        toolName: powerTool.toolName,
+        serialNumber: powerTool.toolId,
+        manufacturer: powerTool.manufacturer,
+        modelNumber: powerTool.modelNumber,
         items: Object.entries(responses).map(([id, response]) => ({
           id,
           status: response.status || 'not-checked',
-          comment: response.comment
+          comment: response.comment,
+          description: POWER_TOOL_INSPECTION_ITEMS.find(item => item.id === id)?.description || '',
+          isRequired: true, // Assuming all monthly inspection items are required
         })),
         status: 'completed',
         powerToolId: powerTool.id,

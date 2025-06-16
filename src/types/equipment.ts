@@ -1,9 +1,9 @@
 import type { DailyInspection, MonthlyInspection } from './inspection';
 
-export type EquipmentCategory = 'heavy' | 'light' | 'power-tool' | 'lifting-tool';
+export type EquipmentCategory = 'heavy' | 'light' | 'power-tool' | 'lifting-tool' | 'commercial';
 export type OperationalStatus = 'active' | 'maintenance' | 'decommissioned';
 export type DocumentStatus = 'verified' | 'pending' | 'rejected';
-export type DocumentType = 'certificate' | 'manual' | 'inspection';
+export type DocumentType = 'certificate' | 'manual' | 'inspection' | 'registration' | 'insurance' | 'permit' | 'maintenance';
 
 export interface Equipment {
   id: string;

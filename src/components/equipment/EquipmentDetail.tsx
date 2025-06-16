@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Equipment, getDaysUntilNextInspection } from "@/types/equipment";
 import { DailyInspection, MonthlyInspection } from "@/types/inspection";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,9 @@ import {
   CheckCircle2,
   XCircle,
   Wrench,
-  AlertTriangle
+  AlertTriangle,
+  ScrollText,
+  ClipboardList
 } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
@@ -42,6 +44,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DocumentType, DocumentStatus } from "@/types/equipment";
+
+// Import new modals
+import { EquipmentMaintenanceLogModal } from "./EquipmentMaintenanceLogModal";
+import { ServiceReportModal } from "./ServiceReportModal";
+import { useToast } from "@/components/ui/use-toast";
 
 interface EquipmentDetailProps {
   equipment: Equipment;
@@ -65,6 +72,14 @@ export function EquipmentDetail({
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isDailyChecklistOpen, setIsDailyChecklistOpen] = useState(false);
   const [isMonthlyChecklistOpen, setIsMonthlyChecklistOpen] = useState(false);
+  // New state for maintenance log and service report modals
+  const [isMaintenanceLogOpen, setIsMaintenanceLogOpen] = useState(false);
+  const [isServiceReportOpen, setIsServiceReportOpen] = useState(false);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]); // To store submitted maintenance logs
+  const [serviceReports, setServiceReports] = useState<any[]>([]); // To store submitted service reports
+
+  const { toast } = useToast();
+
   const daysToInspection = getDaysUntilNextInspection(equipment.nextInspectionDate);
 
   // Check if there's a daily inspection for today
@@ -83,6 +98,27 @@ export function EquipmentDetail({
     if (onUpdateInspection) {
       await onUpdateInspection(inspection);
     }
+  };
+
+  // Handlers for new modals
+  const handleMaintenanceLogSubmit = async (data: any) => {
+    console.log("Maintenance Log Submitted:", data);
+    setMaintenanceLogs(prevLogs => [data, ...prevLogs]); // Add new log to the beginning
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ سجل الصيانة بنجاح." : "Maintenance log saved successfully.",
+    });
+    setIsMaintenanceLogOpen(false);
+  };
+
+  const handleServiceReportSubmit = async (data: any) => {
+    console.log("Service Report Submitted:", data);
+    setServiceReports(prevReports => [data, ...prevReports]); // Add new report to the beginning
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ تقرير الخدمة بنجاح." : "Service report saved successfully.",
+    });
+    setIsServiceReportOpen(false);
   };
 
   const documentStatuses = {
@@ -123,6 +159,75 @@ export function EquipmentDetail({
     { date: "2024-02-05", action: "Scheduled Maintenance", by: "Tech D", status: "Scheduled" },
   ];
 
+  // Sample data for new modals (can be expanded)
+  const sampleMaintenanceLogs = [
+    {
+      id: 'ml-001',
+      equipmentInfo: {
+        typeOfEquipment: 'Crawler Crane',
+        manufacturer: 'Liebherr',
+        serialNumber: 'LCC12345',
+        location: 'Site A',
+        dateManufactured: '2020-05-15',
+        dateInService: '2020-06-01',
+      },
+      maintenanceActivities: [
+        { id: 'ma-001', date: '2024-05-01', description: 'Monthly lubrication and fluid check', performedBy: 'John Doe', validatedBy: 'Jane Smith', dateOfValidation: '2024-05-02', nextActivityDue: '2024-06-01', remarks: 'All good' },
+        { id: 'ma-002', date: '2023-11-01', description: '6-month major service', performedBy: 'Service Team A', validatedBy: 'Supervisor X', dateOfValidation: '2023-11-03', nextActivityDue: '2024-05-01', remarks: 'Replaced hydraulic filters' },
+      ],
+      footer: {
+        supervisorName: 'Ahmed Al-Qahtani',
+        signatureDate: '2024-05-02',
+        formReference: 'EQML-001',
+        revisionTracking: 'Rev 1.0',
+      },
+    },
+  ];
+
+  const sampleServiceReports = [
+    {
+      id: 'sr-001',
+      reportNumber: 'SR-00123',
+      customerDetails: {
+        customerName: 'ABC Construction',
+        serviceLocation: 'Project Site B',
+      },
+      equipmentDetails: {
+        equipmentType: 'Excavator',
+        modelNumber: 'CAT320',
+        engineNumber: 'ENG789',
+        chassisSerialNumber: 'EXC98765',
+        serviceDate: '2024-04-20',
+        warrantyStatus: 'no_warranty',
+      },
+      serviceDetails: {
+        natureOfComplaint: 'Hydraulic leak from main pump',
+        detailedServiceDescription: 'Identified worn seal in hydraulic pump. Replaced seal and refilled hydraulic fluid. Tested system for leaks, none found. Cleaned work area.',
+        partsUsed: [
+          { id: 'pu-001', name: 'Hydraulic Pump Seal Kit', quantity: 1, unitCost: 150.00 },
+          { id: 'pu-002', name: 'Hydraulic Fluid (20L)', quantity: 2, unitCost: 80.00 },
+        ],
+      },
+      customerFeedback: 'Service was prompt and effective. Issue resolved.',
+      signatures: {
+        gmgtRepresentativeName: 'Fatima Al-Hamad',
+        gmgtSignatureDate: '2024-04-20',
+        customerRepresentativeName: 'Mohammed Zaki',
+        customerSignatureDate: '2024-04-20',
+      },
+    },
+  ];
+
+  // Initialize states with sample data if they are empty, ensuring they are not re-added on re-render
+  useEffect(() => {
+    if (maintenanceLogs.length === 0 && sampleMaintenanceLogs.length > 0) {
+      setMaintenanceLogs(sampleMaintenanceLogs);
+    }
+    if (serviceReports.length === 0 && sampleServiceReports.length > 0) {
+      setServiceReports(sampleServiceReports);
+    }
+  }, [maintenanceLogs.length, serviceReports.length]);
+
   const handleSave = () => {
     // Implement save logic here
     setIsEditing(false);
@@ -159,6 +264,14 @@ export function EquipmentDetail({
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsMaintenanceLogOpen(true)}>
+            <ScrollText className="h-4 w-4 mr-2" />
+            {isRTL ? "سجل الصيانة" : "Maintenance Log"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsServiceReportOpen(true)}>
+            <ClipboardList className="h-4 w-4 mr-2" />
+            {isRTL ? "تقرير الخدمة" : "Service Report"}
+          </Button>
           {isEditing ? (
             <>
               <Button size="sm" onClick={handleSave}>
@@ -425,7 +538,7 @@ export function EquipmentDetail({
             {isRTL ? "السجل" : "History"}
           </TabsTrigger>
           <TabsTrigger value="maintenance">
-            {isRTL ? "الصيانة" : "Maintenance"}
+            {isRTL ? "الصيانة / تقرير الخدمة" : "Maintenance/Service Report"}
           </TabsTrigger>
         </TabsList>
         
@@ -528,6 +641,64 @@ export function EquipmentDetail({
                     <span className="text-muted-foreground">{m.date} — {m.by} — {m.status}</span>
                   </div>
                 ))}
+
+                {/* Display Maintenance Logs */}
+                {maintenanceLogs.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium text-base mb-3">{isRTL ? "سجلات الصيانة" : "Maintenance Logs"}</h4>
+                    <div className="space-y-3">
+                      {maintenanceLogs.map((log, logIdx) => (
+                        <div key={log.id || `ml-${logIdx}`} className="border rounded-lg p-3 bg-white shadow-sm">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-semibold text-sm">
+                              {isRTL ? `سجل الصيانة لـ ${log.equipmentInfo?.typeOfEquipment || ''}` : `Maintenance Log for ${log.equipmentInfo?.typeOfEquipment || ''}`}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {log.footer?.signatureDate ? new Date(log.footer.signatureDate).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {isRTL ? "الأنشطة: " : "Activities: "}
+                            {log.maintenanceActivities.map((act: any) => act.description).join('; ')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {isRTL ? "بواسطة: " : "By: "}{log.footer?.supervisorName || 'N/A'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Display Service Reports */}
+                {serviceReports.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium text-base mb-3">{isRTL ? "تقارير الخدمة" : "Service Reports"}</h4>
+                    <div className="space-y-3">
+                      {serviceReports.map((report, reportIdx) => (
+                        <div key={report.id || `sr-${reportIdx}`} className="border rounded-lg p-3 bg-white shadow-sm">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-semibold text-sm">
+                              {isRTL ? `تقرير الخدمة رقم ${report.reportNumber}` : `Service Report No. ${report.reportNumber}`}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {report.equipmentDetails?.serviceDate ? new Date(report.equipmentDetails.serviceDate).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {isRTL ? "الشكوى: " : "Complaint: "}{report.serviceDetails?.natureOfComplaint || 'N/A'}
+                          </p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {isRTL ? "الوصف: " : "Description: "}{report.serviceDetails?.detailedServiceDescription || 'N/A'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {isRTL ? "العميل: " : "Customer: "}{report.customerDetails?.customerName || 'N/A'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -547,6 +718,23 @@ export function EquipmentDetail({
         open={isMonthlyChecklistOpen}
         onOpenChange={setIsMonthlyChecklistOpen}
         onSubmit={handleInspectionSubmit}
+      />
+
+      {/* New Modals */}
+      <EquipmentMaintenanceLogModal
+        open={isMaintenanceLogOpen}
+        onOpenChange={setIsMaintenanceLogOpen}
+        equipment={equipment}
+        onSubmit={handleMaintenanceLogSubmit}
+        loading={false}
+      />
+
+      <ServiceReportModal
+        open={isServiceReportOpen}
+        onOpenChange={setIsServiceReportOpen}
+        equipment={equipment}
+        onSubmit={handleServiceReportSubmit}
+        loading={false}
       />
     </div>
   );

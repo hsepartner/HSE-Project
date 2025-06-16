@@ -5,12 +5,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2 } from "lucide-react";
-import { PowerTool } from "@/types/equipment";
+import type { PowerTool } from "@/types/power-tools";
 import { cn } from "@/lib/utils";
+import type { DailyInspection } from "@/types/inspection";
 
 interface InspectionItem {
   id: string;
+  image: string;
+  title: string;
   description: string;
+  titleAr: string;
+  descriptionAr: string;
   isRequired: boolean;
   status: "not-checked" | "passed" | "failed";
   comment?: string; // Add comment field to support per-item comments
@@ -20,6 +25,11 @@ interface PowerToolDailyInspection {
   date: string;
   operatorId: string;
   operatorName: string;
+  equipmentId: string;
+  toolName: string;
+  serialNumber: string;
+  manufacturer: string;
+  modelNumber: string;
   items: InspectionItem[];
   notes: string;
   status: "completed";
@@ -35,6 +45,7 @@ const INSPECTION_ITEMS = [
     description: "Fire extinguisher available",
     titleAr: "طفاية الحريق",
     descriptionAr: "طفاية الحريق متوفرة",
+    isRequired: true,
   },
   {
     id: "first-aid",
@@ -43,6 +54,7 @@ const INSPECTION_ITEMS = [
     description: "First aid box available",
     titleAr: "صندوق الإسعافات الأولية",
     descriptionAr: "صندوق الإسعافات الأولية متوفر",
+    isRequired: true,
   },
   {
     id: "oil-check",
@@ -51,6 +63,7 @@ const INSPECTION_ITEMS = [
     description: "Check oil level, no oil leak observed",
     titleAr: "فحص الزيت",
     descriptionAr: "فحص مستوى الزيت، لا يوجد تسرب للزيت",
+    isRequired: true,
   },
   {
     id: "windshield",
@@ -59,6 +72,7 @@ const INSPECTION_ITEMS = [
     description: "Windshield is clean and free from damages",
     titleAr: "الزجاج الأمامي",
     descriptionAr: "الزجاج الأمامي نظيف وخالي من الأضرار",
+    isRequired: true,
   },
   {
     id: "lights",
@@ -67,6 +81,7 @@ const INSPECTION_ITEMS = [
     description: "Head lights, Indicator lights, break lights are operational",
     titleAr: "الأضواء",
     descriptionAr: "المصابيح الأمامية، إشارات الانعطاف، أضواء الفرامل تعمل",
+    isRequired: true,
   },
   {
     id: "tires",
@@ -75,6 +90,7 @@ const INSPECTION_ITEMS = [
     description: "Tyre condition – FRONT tyre / REAR tyre",
     titleAr: "حالة الإطارات",
     descriptionAr: "حالة الإطارات - الإطارات الأمامية / الخلفية",
+    isRequired: true,
   },
   {
     id: "cabin",
@@ -83,6 +99,7 @@ const INSPECTION_ITEMS = [
     description: "Closed cabin and Air Conditioning is working",
     titleAr: "المقصورة",
     descriptionAr: "المقصورة مغلقة ونظام التكييف يعمل",
+    isRequired: true,
   },
   {
     id: "reverse-alarm",
@@ -91,6 +108,7 @@ const INSPECTION_ITEMS = [
     description: "Reverse alarm, horn, mirrors are operational",
     titleAr: "إنذار الرجوع للخلف",
     descriptionAr: "إنذار الرجوع للخلف، البوق، المرايا تعمل",
+    isRequired: true,
   },
   {
     id: "hoses",
@@ -99,6 +117,7 @@ const INSPECTION_ITEMS = [
     description: "Hoses & pipe joints are in good condition",
     titleAr: "الخراطيم والأنابيب",
     descriptionAr: "الخراطيم ووصلات الأنابيب في حالة جيدة",
+    isRequired: true,
   },
   {
     id: "bucket",
@@ -107,6 +126,7 @@ const INSPECTION_ITEMS = [
     description: "Condition of buckets (teeth protected)",
     titleAr: "حالة الدلو",
     descriptionAr: "حالة الدلاء (الأسنان محمية)",
+    isRequired: true,
   },
 ];
 
@@ -114,7 +134,7 @@ interface PowerToolDailyChecklistDialogProps {
   powerTool: PowerTool;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (inspection: PowerToolDailyInspection) => Promise<void>;
+  onSubmit: (inspection: DailyInspection) => Promise<void>;
 }
 
 export function PowerToolDailyChecklistDialog({
@@ -204,6 +224,11 @@ export function PowerToolDailyChecklistDialog({
         date: new Date().toISOString(),
         operatorId: "current-user-id",
         operatorName: powerTool.operatorName || "Unknown Operator",
+        equipmentId: powerTool.id,
+        toolName: powerTool.toolName,
+        serialNumber: powerTool.toolId,
+        manufacturer: powerTool.manufacturer,
+        modelNumber: powerTool.modelNumber,
         items: INSPECTION_ITEMS.map((item) => ({
           id: item.id,
           description: item.description,
@@ -216,7 +241,7 @@ export function PowerToolDailyChecklistDialog({
         powerToolId: powerTool.id,
       };
 
-      await onSubmit(inspection);
+      await onSubmit(inspection as DailyInspection);
       onOpenChange(false);
       setCurrentStep(0);
       setResponses({});

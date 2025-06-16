@@ -37,11 +37,17 @@ import {
   Trash2,
   X,
   Image as ImageIcon,
-  Share2
+  Share2,
+  ScrollText,
+  ClipboardList
 } from "lucide-react";
 import { format } from "date-fns";
 import { LiftingAccessoryDailyChecklistDialog } from "@/components/lifting-tools/LiftingAccessoryDailyChecklistDialog";
 import { LiftingAccessoryMonthlyInspectionDialog } from "@/components/lifting-tools/LiftingAccessoryMonthlyInspectionDialog";
+import { EquipmentMaintenanceLogModal } from '@/components/equipment/EquipmentMaintenanceLogModal';
+import { ServiceReportModal } from '@/components/equipment/ServiceReportModal';
+import type { DailyInspection, MonthlyInspection } from '@/types/inspection';
+import type { Equipment } from '@/types/equipment';
 
 // Lifting Accessory interface with project field
 interface LiftingAccessory {
@@ -74,6 +80,8 @@ interface LiftingAccessory {
   status: 'active' | 'inspection' | 'inactive';
   image?: string;
   project: string;
+  dailyInspections?: DailyInspection[];
+  monthlyInspections?: MonthlyInspection[];
 }
 
 // Sample data for lifting accessories
@@ -107,7 +115,9 @@ const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
     safetyColorCode: "green",
     status: "active",
     image: "/images/Electric chain hoist.jpg",
-    project: "Project A"
+    project: "Project A",
+    dailyInspections: [],
+    monthlyInspections: []
   },
   {
     id: "LA-00125",
@@ -138,7 +148,9 @@ const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
     safetyColorCode: "blue",
     status: "active",
     image: "/images/Lever Hoist.jpg",
-    project: "Project A"
+    project: "Project A",
+    dailyInspections: [],
+    monthlyInspections: []
   },
   {
     id: "LA-00126",
@@ -169,7 +181,9 @@ const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
     safetyColorCode: "yellow",
     status: "active",
     image: "/images/Hydraulic Jack.jpg",
-    project: "Project B"
+    project: "Project B",
+    dailyInspections: [],
+    monthlyInspections: []
   },
   {
     id: "LA-00127",
@@ -200,7 +214,9 @@ const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
     safetyColorCode: "green",
     status: "active",
     image: "/images/Hydraulic Lifting Table.jpg",
-    project: "Project B"
+    project: "Project B",
+    dailyInspections: [],
+    monthlyInspections: []
   },
   {
     id: "LA-00128",
@@ -231,7 +247,9 @@ const SAMPLE_LIFTING_ACCESSORIES: LiftingAccessory[] = [
     safetyColorCode: "blue",
     status: "active",
     image: "/images/handwinch.jpg",
-    project: "Project C"
+    project: "Project C",
+    dailyInspections: [],
+    monthlyInspections: []
   }
 ];
 
@@ -325,7 +343,7 @@ const ShareAccessoryModal = ({
                 id="share-link"
                 value={shareLink}
                 readOnly
-                onClick={(e) => e.target.select()}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
               />
               <Button
                 variant="outline"
@@ -362,6 +380,45 @@ const ShareAccessoryModal = ({
   );
 };
 
+// Helper functions for inspection validation
+
+const getInspectionStatus = (inspection: DailyInspection | MonthlyInspection): 'passed' | 'needs-service' | 'failed' => {
+  const failedItems = inspection.items.filter(item => item.status === 'failed').length;
+  const notCheckedItems = inspection.items.filter(item => item.status === 'not-checked').length;
+  
+  if (notCheckedItems > 0) {
+    return 'needs-service';
+  } else if (failedItems > 0) {
+    return 'failed';
+  } else {
+    return 'passed';
+  }
+};
+
+const mapLiftingAccessoryToEquipment = (accessory: LiftingAccessory): Equipment => {
+  return {
+    id: accessory.id,
+    name: accessory.accessoryName,
+    model: accessory.modelNumber,
+    serialNumber: accessory.accessoryId,
+    category: 'lifting-tool',
+    status: accessory.status === 'active' ? 'active' :
+            accessory.status === 'inspection' ? 'maintenance' :
+            'decommissioned',
+    complianceScore: 100,
+    nextInspectionDate: accessory.nextInspectionDue?.toISOString() || '',
+    purchaseDate: accessory.purchaseDate?.toISOString() || '',
+    documents: [],
+    notes: accessory.remarks,
+    assignedTo: accessory.assignedTo,
+    location: accessory.assignedLocation,
+    parentEquipmentId: undefined,
+    image: accessory.image,
+    dailyInspections: accessory.dailyInspections,
+    monthlyInspections: accessory.monthlyInspections,
+  };
+};
+
 const LiftingTools = () => {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
@@ -384,6 +441,10 @@ const LiftingTools = () => {
   const [dailyInspectionOpen, setDailyInspectionOpen] = useState(false);
   const [monthlyInspectionOpen, setMonthlyInspectionOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isMaintenanceLogOpen, setIsMaintenanceLogOpen] = useState(false); // New state for maintenance log modal
+  const [isServiceReportOpen, setIsServiceReportOpen] = useState(false); // New state for service report modal
+  const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]); // State to hold maintenance logs
+  const [serviceReports, setServiceReports] = useState<any[]>([]); // State to hold service reports
   
   // Form state for bio-data entry
   const [formData, setFormData] = useState<Partial<LiftingAccessory>>({
@@ -671,12 +732,13 @@ const LiftingTools = () => {
       // Update the accessory with inspection results
       const updatedAccessories = accessories.map(acc => {
         if (acc.id === selectedAccessory?.id) {
+          const updatedInspections = [...(acc.dailyInspections || []), inspection];
           return {
             ...acc,
-            dailyInspections: [...(acc.dailyInspections || []), inspection],
+            dailyInspections: updatedInspections,
             lastInspectionDate: new Date(),
-            inspectionStatus: getInspectionStatus(inspection)
-          };
+            inspectionStatus: getInspectionStatus(inspection) as 'passed' | 'needs-service' | 'failed'
+          } as LiftingAccessory;
         }
         return acc;
       });
@@ -703,13 +765,14 @@ const LiftingTools = () => {
       // Update the accessory with inspection results
       const updatedAccessories = accessories.map(acc => {
         if (acc.id === selectedAccessory?.id) {
+          const updatedInspections = [...(acc.monthlyInspections || []), inspection];
           return {
             ...acc,
-            monthlyInspections: [...(acc.monthlyInspections || []), inspection],
+            monthlyInspections: updatedInspections,
             lastInspectionDate: new Date(),
             nextInspectionDue: new Date(inspection.nextInspectionDate),
-            inspectionStatus: getInspectionStatus(inspection)
-          };
+            inspectionStatus: getInspectionStatus(inspection) as 'passed' | 'needs-service' | 'failed'
+          } as LiftingAccessory;
         }
         return acc;
       });
@@ -728,6 +791,26 @@ const LiftingTools = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleMaintenanceLogSubmit = (data: any) => {
+    console.log("Maintenance Log Submitted:", data);
+    setMaintenanceLogs(prevLogs => [data, ...prevLogs]);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ سجل الصيانة بنجاح." : "Maintenance log saved successfully.",
+    });
+    setIsMaintenanceLogOpen(false);
+  };
+
+  const handleServiceReportSubmit = (data: any) => {
+    console.log("Service Report Submitted:", data);
+    setServiceReports(prevReports => [data, ...prevReports]);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ تقرير الخدمة بنجاح." : "Service report saved successfully.",
+    });
+    setIsServiceReportOpen(false);
   };
 
   return (
@@ -1593,6 +1676,10 @@ const LiftingTools = () => {
               <Download className="h-4 w-4" />
               {isRTL ? "التقارير" : "Reports"}
             </TabsTrigger>
+            <TabsTrigger value="maintenance-service-reports" className="flex items-center gap-2 text-wrap">
+              <ClipboardList className="h-4 w-4" />
+              {isRTL ? "تقارير الصيانة/الخدمة" : "Maintenance/Service Reports"}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="mt-6">
@@ -1802,6 +1889,22 @@ const LiftingTools = () => {
                         <CalendarCheck className="h-4 w-4 mr-2" />
                         {isRTL ? "الفحص الشهري" : "Monthly Check"}
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsMaintenanceLogOpen(true)}
+                      >
+                        <ScrollText className="h-4 w-4 mr-2" />
+                        {isRTL ? "سجل الصيانة" : "Maintenance Log"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsServiceReportOpen(true)}
+                      >
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                        {isRTL ? "تقرير الخدمة" : "Service Report"}
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -1925,6 +2028,105 @@ const LiftingTools = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="maintenance-service-reports" className="mt-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>{isRTL ? "سجلات الصيانة وتقارير الخدمة" : "Maintenance Logs & Service Reports"}</CardTitle>
+                  <Button variant="outline" onClick={() => {
+                    setMaintenanceLogs([]);
+                    setServiceReports([]);
+                    toast({
+                      title: isRTL ? "تم المسح" : "Cleared",
+                      description: isRTL ? "تم مسح جميع سجلات الصيانة وتقارير الخدمة." : "All maintenance logs and service reports have been cleared.",
+                    });
+                  }}>
+                    {isRTL ? "مسح السجلات" : "Clear Logs"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="maintenance-logs" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 gap-2 p-1 bg-muted rounded-lg mb-4">
+                    <TabsTrigger value="maintenance-logs">{isRTL ? "سجلات الصيانة" : "Maintenance Logs"}</TabsTrigger>
+                    <TabsTrigger value="service-reports">{isRTL ? "تقارير الخدمة" : "Service Reports"}</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="maintenance-logs">
+                    {maintenanceLogs.length > 0 ? (
+                      <div className="space-y-4">
+                        {maintenanceLogs.map((log, index) => (
+                          <Card key={index} className="border-l-4 border-blue-500">
+                            <CardHeader className="p-4 pb-2">
+                              <CardTitle className="text-lg flex items-center">
+                                <ClipboardList className="h-5 w-5 mr-2 text-blue-600" />
+                                {isRTL ? "سجل الصيانة" : "Maintenance Log"} #{index + 1}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0 text-sm">
+                              <p><strong>{isRTL ? "المعدات:" : "Equipment:"}</strong> {log.equipmentInfo.typeOfEquipment}</p>
+                              <p><strong>{isRTL ? "الرقم التسلسلي:" : "Serial Number:"}</strong> {log.equipmentInfo.serialNumber}</p>
+                              <p><strong>{isRTL ? "الموقع:" : "Location:"}</strong> {log.equipmentInfo.location}</p>
+                              <h4 className="font-semibold mt-3 mb-2">{isRTL ? "الأنشطة:" : "Activities:"}</h4>
+                              <div className="space-y-2">
+                                {log.maintenanceActivities.map((activity: any, actIndex: number) => (
+                                  <div key={actIndex} className="border-t pt-2">
+                                    <p><strong>{isRTL ? "التاريخ:" : "Date:"}</strong> {format(new Date(activity.date), "PPP")}</p>
+                                    <p><strong>{isRTL ? "الوصف:" : "Description:"}</strong> {activity.description}</p>
+                                    <p><strong>{isRTL ? "تم بواسطة:" : "Performed By:"}</strong> {activity.performedBy}</p>
+                                    {activity.nextActivityDue && <p><strong>{isRTL ? "التالي المستحق:" : "Next Due:"}</strong> {format(new Date(activity.nextActivityDue), "PPP")}</p>}
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">{isRTL ? "لا توجد سجلات صيانة متاحة." : "No maintenance logs available."}</p>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="service-reports">
+                    {serviceReports.length > 0 ? (
+                      <div className="space-y-4">
+                        {serviceReports.map((report, index) => (
+                          <Card key={index} className="border-l-4 border-green-500">
+                            <CardHeader className="p-4 pb-2">
+                              <CardTitle className="text-lg flex items-center">
+                                <ClipboardList className="h-5 w-5 mr-2 text-green-600" />
+                                {isRTL ? "تقرير الخدمة" : "Service Report"} #{report.reportNumber}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0 text-sm">
+                              <p><strong>{isRTL ? "العميل:" : "Customer:"}</strong> {report.customerDetails.customerName}</p>
+                              <p><strong>{isRTL ? "الموقع:" : "Location:"}</strong> {report.customerDetails.serviceLocation}</p>
+                              <p><strong>{isRTL ? "تاريخ الخدمة:" : "Service Date:"}</strong> {format(new Date(report.equipmentDetails.serviceDate), "PPP")}</p>
+                              <p><strong>{isRTL ? "الشكوى:" : "Complaint:"}</strong> {report.serviceDetails.natureOfComplaint}</p>
+                              <p><strong>{isRTL ? "الوصف:" : "Description:"}</strong> {report.serviceDetails.detailedServiceDescription}</p>
+                              {report.serviceDetails.partsUsed.length > 0 && (
+                                <> 
+                                  <h4 className="font-semibold mt-3 mb-2">{isRTL ? "الأجزاء المستخدمة:" : "Parts Used:"}</h4>
+                                  <ul className="list-disc pl-5">
+                                    {report.serviceDetails.partsUsed.map((part: any, partIndex: number) => (
+                                      <li key={partIndex}>{part.name} ({part.quantity} x {part.unitCost})</li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">{isRTL ? "لا توجد تقارير خدمة متاحة." : "No service reports available."}</p>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Image Preview Dialog */}
@@ -1968,6 +2170,22 @@ const LiftingTools = () => {
           onOpenChange={setMonthlyInspectionOpen}
           accessory={selectedAccessory!}
           onSubmit={handleMonthlyInspectionSubmit}
+        />
+        {/* Maintenance Log Modal */}
+        <EquipmentMaintenanceLogModal
+          open={isMaintenanceLogOpen}
+          onOpenChange={setIsMaintenanceLogOpen}
+          onSubmit={handleMaintenanceLogSubmit}
+          equipment={selectedAccessory ? mapLiftingAccessoryToEquipment(selectedAccessory) : null}
+          loading={false}
+        />
+        {/* Service Report Modal */}
+        <ServiceReportModal
+          open={isServiceReportOpen}
+          onOpenChange={setIsServiceReportOpen}
+          onSubmit={handleServiceReportSubmit}
+          equipment={selectedAccessory ? mapLiftingAccessoryToEquipment(selectedAccessory) : null}
+          loading={false}
         />
       </div>
     </DashboardLayout>

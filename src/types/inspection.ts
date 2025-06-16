@@ -1,9 +1,12 @@
+import { EquipmentCategory } from './equipment';
+
 // Common inspection item interface
-interface InspectionItem {
+export interface InspectionItem {
   id: string;
   description: string;
   isRequired: boolean;
   status: 'not-checked' | 'passed' | 'failed';
+  comment?: string;
 }
 
 // Base inspection interface
@@ -23,6 +26,7 @@ export interface DailyInspection extends BaseInspection {
   serialNumber: string;
   manufacturer: string;
   modelNumber: string;
+  powerToolId: string;
 }
 
 // Monthly inspections
@@ -35,6 +39,7 @@ export interface MonthlyInspection extends BaseInspection {
   manufacturer: string;
   modelNumber: string;
   nextInspectionDate: string;
+  powerToolId: string;
 }
 
 // Default checklist items for different equipment categories
@@ -63,5 +68,6 @@ export const DEFAULT_DAILY_CHECKLIST_ITEMS: { [key in EquipmentCategory]: Inspec
     { id: 't2', description: 'Check load capacity indicators', isRequired: true, status: 'not-checked' },
     { id: 't3', description: 'Test safety latches and hooks', isRequired: true, status: 'not-checked' },
     { id: 't4', description: 'Verify emergency stop operation', isRequired: true, status: 'not-checked' }
-  ]
+  ],
+  'commercial': []
 };

@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clipboard, History, MapPin, User, Tag, Edit, Save, X, Upload, FileText, Eye, ArrowLeft, Truck, CheckCircle2, Clock } from "lucide-react";
+import { Calendar, Clipboard, History, MapPin, User, Tag, Edit, Save, X, Upload, FileText, Eye, ArrowLeft, Truck, CheckCircle2, Clock, ScrollText, ClipboardList } from "lucide-react";
 import { CategoryBadge } from "@/components/status/CategoryBadge";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { OperationalStatusBadge } from "@/components/status/OperationalStatusBadge";
 import { ComplianceMeter } from "@/components/status/ComplianceMeter";
 import { DocumentList } from "@/components/equipment/DocumentList";
 import { useLanguage } from "@/hooks/use-language";
@@ -22,6 +23,9 @@ import {
 } from "@/components/ui/dialog";
 import { VehicleDailyChecklistDialog } from "./VehicleDailyChecklistDialog";
 import { MonthlyInspectionDialog } from "./VehicleMonthlyInspectionDialog";
+import { EquipmentMaintenanceLogModal } from "@/components/equipment/EquipmentMaintenanceLogModal";
+import { ServiceReportModal } from "@/components/equipment/ServiceReportModal";
+import { useToast } from "@/components/ui/use-toast";
 
 // Mock data for history and maintenance
 const mockHistory = [
@@ -62,6 +66,71 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isDailyChecklistOpen, setIsDailyChecklistOpen] = useState(false);
   const [isMonthlyChecklistOpen, setIsMonthlyChecklistOpen] = useState(false);
+  const [isMaintenanceLogOpen, setIsMaintenanceLogOpen] = useState(false);
+  const [isServiceReportOpen, setIsServiceReportOpen] = useState(false);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([
+    {
+      id: "ml-001",
+      equipmentInfo: {
+        typeOfEquipment: "Forklift",
+      },
+      maintenanceActivities: [
+        { description: "Replaced hydraulic fluid" },
+        { description: "Checked tire pressure" },
+      ],
+      footer: {
+        supervisorName: "Ali Al-Mansoori",
+        signatureDate: "2024-05-20",
+      },
+    },
+    {
+      id: "ml-002",
+      equipmentInfo: {
+        typeOfEquipment: "Excavator",
+      },
+      maintenanceActivities: [
+        { description: "Engine tune-up" },
+        { description: "Brake inspection" },
+      ],
+      footer: {
+        supervisorName: "Mohammed Saleh",
+        signatureDate: "2024-04-15",
+      },
+    },
+  ]);
+  const [serviceReports, setServiceReports] = useState<any[]>([
+    {
+      id: "sr-001",
+      reportNumber: "SR-12345",
+      equipmentDetails: {
+        serviceDate: "2024-05-18",
+      },
+      serviceDetails: {
+        natureOfComplaint: "Engine overheating",
+        detailedServiceDescription: "Flushed cooling system, replaced thermostat.",
+      },
+      customerDetails: {
+        customerName: "ABC Construction",
+      },
+    },
+    {
+      id: "sr-002",
+      reportNumber: "SR-67890",
+      equipmentDetails: {
+        serviceDate: "2024-04-22",
+      },
+      serviceDetails: {
+        natureOfComplaint: "Hydraulic leak",
+        detailedServiceDescription: "Replaced faulty hose and refilled hydraulic fluid.",
+      },
+      customerDetails: {
+        customerName: "XYZ Logistics",
+      },
+    },
+  ]);
+
+  const { toast } = useToast();
+
   const daysToInspection = getDaysUntilNextInspection(vehicle.nextInspectionDate);
 
   // Check if there's a daily inspection for today
@@ -80,6 +149,26 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
     if (onUpdateInspection) {
       await onUpdateInspection(inspection);
     }
+  };
+
+  const handleMaintenanceLogSubmit = (data: any) => {
+    console.log("Maintenance Log Submitted:", data);
+    setMaintenanceLogs(prevLogs => [data, ...prevLogs]);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ سجل الصيانة بنجاح." : "Maintenance log saved successfully.",
+    });
+    setIsMaintenanceLogOpen(false);
+  };
+
+  const handleServiceReportSubmit = (data: any) => {
+    console.log("Service Report Submitted:", data);
+    setServiceReports(prevReports => [data, ...prevReports]);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ تقرير الخدمة بنجاح." : "Service report saved successfully.",
+    });
+    setIsServiceReportOpen(false);
   };
 
   const documentStatuses = {
@@ -129,6 +218,14 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsMaintenanceLogOpen(true)}>
+            <ScrollText className="h-4 w-4 mr-2" />
+            {isRTL ? "سجل الصيانة" : "Maintenance Log"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsServiceReportOpen(true)}>
+            <ClipboardList className="h-4 w-4 mr-2" />
+            {isRTL ? "تقرير الخدمة" : "Service Report"}
+          </Button>
           {isEditing ? (
             <>
               <Button size="sm" onClick={handleSave}>
@@ -206,7 +303,7 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
               </div>
               <div className="flex gap-2">
                 <CategoryBadge category={vehicle.category} size="sm" />
-                <StatusBadge status={vehicle.status} size="sm" />
+                <OperationalStatusBadge status={vehicle.status} size="sm" />
               </div>
               <ComplianceMeter
                 score={vehicle.complianceScore}
@@ -364,7 +461,7 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
             {isRTL ? "السجل" : "History"}
           </TabsTrigger>
           <TabsTrigger value="maintenance">
-            {isRTL ? "الصيانة" : "Maintenance"}
+            {isRTL ? "الصيانة / تقارير الخدمة" : "Maintenance / Service Report"}
           </TabsTrigger>
         </TabsList>
         
@@ -460,18 +557,79 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
         </TabsContent>
 
         <TabsContent value="maintenance" className="mt-6">
-          <div className="space-y-4">            {mockMaintenance.map((maintenance) => (
-              <div key={maintenance.id} className="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50">
-                <div>
-                  <div className="font-medium">{maintenance.action}</div>
-                  <div className="text-sm text-muted-foreground">By: {maintenance.by}</div>
+          <div className="space-y-4">
+            {/* New content for Maintenance Tab */}
+            <Card className="border-primary/20">
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  {/* Existing mock maintenance */}
+                  {mockMaintenance.map((m, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span className="font-medium">{m.action}</span>
+                      <span className="text-muted-foreground">{m.date} — {m.by} — {m.status}</span>
+                    </div>
+                  ))}
+
+                  {/* Display Maintenance Logs */}
+                  {maintenanceLogs.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="font-medium text-base mb-3">{isRTL ? "سجلات الصيانة" : "Maintenance Logs"}</h4>
+                      <div className="space-y-3">
+                        {maintenanceLogs.map((log, logIdx) => (
+                          <div key={log.id || `ml-${logIdx}`} className="border rounded-lg p-3 bg-white shadow-sm">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold text-sm">
+                                {isRTL ? `سجل الصيانة لـ ${log.equipmentInfo?.typeOfEquipment || ''}` : `Maintenance Log for ${log.equipmentInfo?.typeOfEquipment || ''}`}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {log.footer?.signatureDate ? new Date(log.footer.signatureDate).toLocaleDateString() : 'N/A'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {isRTL ? "الأنشطة: " : "Activities: "}
+                              {log.maintenanceActivities.map((act: any) => act.description).join('; ')}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {isRTL ? "بواسطة: " : "By: "}{log.footer?.supervisorName || 'N/A'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Display Service Reports */}
+                  {serviceReports.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="font-medium text-base mb-3">{isRTL ? "تقارير الخدمة" : "Service Reports"}</h4>
+                      <div className="space-y-3">
+                        {serviceReports.map((report, reportIdx) => (
+                          <div key={report.id || `sr-${reportIdx}`} className="border rounded-lg p-3 bg-white shadow-sm">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold text-sm">
+                                {isRTL ? `تقرير الخدمة رقم ${report.reportNumber}` : `Service Report No. ${report.reportNumber}`}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {report.equipmentDetails?.serviceDate ? new Date(report.equipmentDetails.serviceDate).toLocaleDateString() : 'N/A'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {isRTL ? "الشكوى: " : "Complaint: "}{report.serviceDetails?.natureOfComplaint || 'N/A'}
+                            </p>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {isRTL ? "الوصف: " : "Description: "}{report.serviceDetails?.detailedServiceDescription || 'N/A'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {isRTL ? "العميل: " : "Customer: "}{report.customerDetails?.customerName || 'N/A'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="text-right">
-                  <div>{new Date(maintenance.date).toLocaleDateString()}</div>
-                  <Badge variant="outline">{maintenance.status}</Badge>
-                </div>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
@@ -509,6 +667,50 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
         open={isMonthlyChecklistOpen}
         onOpenChange={setIsMonthlyChecklistOpen}
         onSubmit={handleInspectionSubmit}
+      />
+
+      {/* Maintenance Log Modal */}
+      <EquipmentMaintenanceLogModal
+        open={isMaintenanceLogOpen}
+        onOpenChange={setIsMaintenanceLogOpen}
+        equipment={{
+          id: vehicle.id,
+          name: vehicle.name,
+          model: vehicle.model,
+          serialNumber: vehicle.plateNumber,
+          location: vehicle.location,
+          purchaseDate: vehicle.purchaseDate,
+          category: vehicle.category,
+          status: vehicle.status,
+          complianceScore: vehicle.complianceScore,
+          nextInspectionDate: vehicle.nextInspectionDate,
+          image: vehicle.image,
+          documents: vehicle.documents,
+        }}
+        onSubmit={handleMaintenanceLogSubmit}
+        loading={false}
+      />
+
+      {/* Service Report Modal */}
+      <ServiceReportModal
+        open={isServiceReportOpen}
+        onOpenChange={setIsServiceReportOpen}
+        equipment={{
+          id: vehicle.id,
+          name: vehicle.name,
+          model: vehicle.model,
+          serialNumber: vehicle.plateNumber,
+          location: vehicle.location,
+          purchaseDate: vehicle.purchaseDate,
+          category: vehicle.category,
+          status: vehicle.status,
+          complianceScore: vehicle.complianceScore,
+          nextInspectionDate: vehicle.nextInspectionDate,
+          image: vehicle.image,
+          documents: vehicle.documents,
+        }}
+        onSubmit={handleServiceReportSubmit}
+        loading={false}
       />
     </div>
   );

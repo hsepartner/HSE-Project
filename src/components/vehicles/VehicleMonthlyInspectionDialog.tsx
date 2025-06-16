@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
-import { Equipment } from "@/types/equipment";
-import { InspectionItem, MonthlyInspection } from "@/types/inspection";
+import { Vehicle } from "@/types/vehicle";
+import { InspectionItem } from "@/types/inspection";
+import { VehicleMonthlyInspection } from "@/types/vehicleInspection";
 import { cn } from "@/lib/utils";
 
 const INSPECTION_ITEMS = [
@@ -158,14 +159,14 @@ const INSPECTION_ITEMS = [
 ];
 
 interface MonthlyInspectionDialogProps {
-  vehicle: Equipment; // Changed from equipment: Equipment
+  vehicle: Vehicle;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (inspection: MonthlyInspection) => Promise<void>;
+  onSubmit: (inspection: VehicleMonthlyInspection) => Promise<void>;
 }
 
 export function MonthlyInspectionDialog({
-  vehicle, // Changed from equipment
+  vehicle,
   open,
   onOpenChange,
   onSubmit
@@ -183,6 +184,7 @@ export function MonthlyInspectionDialog({
   const [showNextInsteadOfNo, setShowNextInsteadOfNo] = useState(false);
   const [nextInspectionDate, setNextInspectionDate] = useState('');
   const [lastInspectionDate, setLastInspectionDate] = useState('');
+  const [mileage, setMileage] = useState('');
 
   const currentItem = INSPECTION_ITEMS[currentStep];
 
@@ -240,17 +242,23 @@ export function MonthlyInspectionDialog({
         return;
       }
 
-      const inspection: MonthlyInspection = {
+      const inspection: VehicleMonthlyInspection = {
         date: new Date().toISOString(),
         technicianId: 'current-user-id',
-        technicianName: vehicle.assignedTo || 'Unknown Technician', // Changed from equipment to vehicle
-        items: Object.entries(responses).map(([id, response]) => ({
-          id,
-          status: response.status || 'not-checked',
-          comment: response.comment
-        })),
+        technicianName: vehicle?.assignedTo || 'Unknown Technician',
+        items: Object.entries(responses).map(([id, response]) => {
+          const item = INSPECTION_ITEMS.find(i => i.id === id);
+          return {
+            id,
+            description: item?.description || '',
+            isRequired: true,
+            status: response.status || 'not-checked',
+            comment: response.comment
+          };
+        }),
         status: 'completed',
-        equipmentId: vehicle.id,
+        vehicleId: vehicle?.id || '',
+        mileage: Number(mileage),
         nextInspectionDate,
         notes: ''
       };
@@ -290,13 +298,25 @@ export function MonthlyInspectionDialog({
                 <span className="text-muted-foreground mb-1 sm:mb-0">
                   {isRTL ? "المركبة:" : "Vehicle:"}
                 </span>
-                <span className="font-medium sm:ml-2">{vehicle.name}</span>
+                <span className="font-medium sm:ml-2">{vehicle?.name || 'N/A'}</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center">
                 <span className="text-muted-foreground mb-1 sm:mb-0">
                   {isRTL ? "رقم اللوحة:" : "Plate No:"}
                 </span>
-                <span className="font-medium sm:ml-2">{vehicle.plateNumber}</span>
+                <span className="font-medium sm:ml-2">{vehicle?.plateNumber || 'N/A'}</span>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center">
+                <span className="text-muted-foreground mb-1 sm:mb-0">
+                  {isRTL ? "عداد المسافات:" : "Mileage:"}
+                </span>
+                <Input
+                  type="number"
+                  value={mileage}
+                  onChange={(e) => setMileage(e.target.value)}
+                  className="w-full sm:w-40 sm:ml-2"
+                  placeholder={isRTL ? "أدخل قراءة عداد المسافات" : "Enter mileage"}
+                />
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center">
                 <span className="text-muted-foreground mb-1 sm:mb-0">

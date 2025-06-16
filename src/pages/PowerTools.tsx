@@ -37,12 +37,17 @@ import {
   ImageIcon,
   MapPin,
   User,
+  ScrollText,
+  ClipboardList,
 } from 'lucide-react';
 import { PowerToolDailyChecklistDialog } from '@/components/power-tools/PowerToolDailyChecklistDialog';
 import { PowerToolMonthlyInspectionDialog } from '@/components/power-tools/PowerToolMonthlyInspectionDialog';
+import { EquipmentMaintenanceLogModal } from '@/components/equipment/EquipmentMaintenanceLogModal';
+import { ServiceReportModal } from '@/components/equipment/ServiceReportModal';
 import { SAMPLE_POWER_TOOLS } from '@/data/sample-power-tools';
 import type { DailyInspection, MonthlyInspection } from '@/types/inspection';
 import type { PowerTool } from '@/types/power-tools';
+import type { Equipment } from '@/types/equipment'; // Import Equipment type
 
 // ShareToolModal component
 const ShareToolModal = ({
@@ -198,6 +203,31 @@ const isInspectionDue = (tool: PowerTool) => {
   }
 };
 
+// Helper function to map PowerTool to Equipment
+const mapPowerToolToEquipment = (tool: PowerTool): Equipment => {
+  return {
+    id: tool.id,
+    name: tool.toolName,
+    model: tool.modelNumber,
+    serialNumber: tool.toolId,
+    category: 'power-tool', // Assuming PowerTool always maps to 'power-tool' category
+    status: tool.status === 'active' ? 'active' :
+            tool.status === 'maintenance' ? 'maintenance' :
+            'decommissioned', // This covers 'inactive'
+    complianceScore: 100, // Default or calculate based on inspectionStatus if needed
+    nextInspectionDate: tool.nextCalibrationDue?.toISOString() || '',
+    purchaseDate: tool.purchaseDate?.toISOString() || '',
+    documents: [], // PowerTool does not have documents directly
+    notes: tool.remarks,
+    assignedTo: tool.assignedTo,
+    location: tool.assignedLocation,
+    parentEquipmentId: undefined, // PowerTool doesn't have this, keep undefined
+    image: tool.image,
+    dailyInspections: tool.dailyInspections,
+    monthlyInspections: tool.monthlyInspections,
+  };
+};
+
 const PowerTools = () => {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
@@ -220,6 +250,80 @@ const PowerTools = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState("Project A");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isMaintenanceLogOpen, setIsMaintenanceLogOpen] = useState(false); // New state for maintenance log modal
+  const [isServiceReportOpen, setIsServiceReportOpen] = useState(false); // New state for service report modal
+  const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([
+    {
+      equipmentInfo: {
+        typeOfEquipment: "Angle Grinder",
+        manufacturer: "DeWalt",
+        serialNumber: "DW12345",
+        location: "Workshop A",
+        dateManufactured: "2022-01-15",
+        dateInService: "2022-02-01",
+      },
+      maintenanceActivities: [
+        {
+          id: "ml-1-act-1",
+          date: "2023-03-10",
+          description: "Replaced carbon brushes, cleaned motor. Standard preventative maintenance.",
+          performedBy: "Ahmed Khan",
+          validatedBy: "Fatima Ali",
+          dateOfValidation: "2023-03-11",
+          nextActivityDue: "2024-03-10",
+          remarks: "Tool operating smoothly after maintenance.",
+        },
+        {
+          id: "ml-1-act-2",
+          date: "2023-09-20",
+          description: "Checked gear lubrication and replaced power cord due to wear.",
+          performedBy: "Yousef Al-Mansoori",
+          validatedBy: "Fatima Ali",
+          dateOfValidation: "2023-09-21",
+          nextActivityDue: "2024-09-20",
+          remarks: "No unusual wear detected on gears. Cord replaced successfully.",
+        },
+      ],
+      footer: {
+        supervisorName: "Omar Abdullah",
+        signatureDate: "2023-09-21",
+        formReference: "EQML-001",
+        revisionTracking: "Rev 1.0",
+      },
+    },
+  ]); // State to hold maintenance logs
+  const [serviceReports, setServiceReports] = useState<any[]>([
+    {
+      reportNumber: "SR-00123",
+      customerDetails: {
+        customerName: "Falcon Construction LLC",
+        serviceLocation: "Project B Site Office",
+      },
+      equipmentDetails: {
+        equipmentType: "Excavator",
+        modelNumber: "CAT 320D",
+        engineNumber: "C6.4ACERT",
+        chassisSerialNumber: "ABCDEFG12345",
+        serviceDate: "2023-11-05",
+        warrantyStatus: "no_warranty",
+      },
+      serviceDetails: {
+        natureOfComplaint: "Hydraulic leak from boom cylinder.",
+        detailedServiceDescription: "Identified leak in boom cylinder seal. Replaced hydraulic cylinder seal kit and refilled hydraulic fluid. Tested for leaks, none observed.",
+        partsUsed: [
+          { id: "sr-1-part-1", name: "Boom Cylinder Seal Kit", quantity: 1, unitCost: 150.00 },
+          { id: "sr-1-part-2", name: "Hydraulic Fluid (ISO VG 46)", quantity: 20, unitCost: 10.00 },
+        ],
+      },
+      customerFeedback: "Excellent service, very quick response and professional repair.",
+      signatures: {
+        gmgtRepresentativeName: "Mohammed Jassim",
+        gmgtSignatureDate: "2023-11-05",
+        customerRepresentativeName: "Khalid Al-Hajri",
+        customerSignatureDate: "2023-11-05",
+      },
+    },
+  ]); // State to hold service reports
   
   // Form state for bio-data entry
   const [formData, setFormData] = useState<Partial<PowerTool>>({
@@ -505,7 +609,7 @@ const PowerTools = () => {
         toast({
           title: isRTL ? "تنبيه" : "Warning", 
           description: isRTL ? `الفحص التالي مستحق في ${nextDate}` : `Next inspection is due on ${nextDate}`,
-          variant: "warning"
+          variant: "default"
         });
         return;
       }
@@ -526,7 +630,7 @@ const PowerTools = () => {
           const failedItems = inspection.items.filter(item => item.status === 'failed').length;
           const notCheckedItems = inspection.items.filter(item => item.status === 'not-checked').length;
           
-          const inspectionStatus = notCheckedItems > 0 ? 'needs-service' : 
+          const inspectionStatus: 'passed' | 'needs-service' | 'failed' = notCheckedItems > 0 ? 'needs-service' :
                                  failedItems > 0 ? 'failed' : 'passed';
 
           return {
@@ -563,7 +667,7 @@ const PowerTools = () => {
           description: isRTL 
             ? `الفحص التالي مستحق في ${nextDate}`
             : `Next inspection is due on ${nextDate}`,
-          variant: "warning"
+          variant: "default"
         });
         return;
       }
@@ -624,6 +728,26 @@ const PowerTools = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleMaintenanceLogSubmit = (data: any) => {
+    console.log("Maintenance Log Submitted:", data);
+    setMaintenanceLogs(prevLogs => [data, ...prevLogs]);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ سجل الصيانة بنجاح." : "Maintenance log saved successfully.",
+    });
+    setIsMaintenanceLogOpen(false);
+  };
+
+  const handleServiceReportSubmit = (data: any) => {
+    console.log("Service Report Submitted:", data);
+    setServiceReports(prevReports => [data, ...prevReports]);
+    toast({
+      title: isRTL ? "نجاح" : "Success",
+      description: isRTL ? "تم حفظ تقرير الخدمة بنجاح." : "Service report saved successfully.",
+    });
+    setIsServiceReportOpen(false);
   };
 
   // Helper functions for inspection validation
@@ -1522,7 +1646,7 @@ const PowerTools = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
+          <TabsList className="grid w-full grid-cols-4 gap-2 p-1 bg-muted rounded-lg">
             <TabsTrigger value="list" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               {isRTL ? "قائمة الأدوات" : "Tool List"}
@@ -1534,6 +1658,10 @@ const PowerTools = () => {
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <Download className="h-4 w-4" />
               {isRTL ? "التقارير" : "Reports"}
+            </TabsTrigger>
+            <TabsTrigger value="maintenance-service-reports" className="flex items-center gap-2 text-wrap">
+              <ClipboardList className="h-4 w-4" />
+              {isRTL ? "تقارير الصيانة/الخدمة" : "Maintenance/Service Reports"}
             </TabsTrigger>
           </TabsList>
 
@@ -1633,7 +1761,7 @@ const PowerTools = () => {
                                 {isRTL ? "آخر فحص: " : "Last Inspection: "} 
                                 {tool.lastInspectionDate ? format(tool.lastInspectionDate, "PPP") : "-"}
                                 {isInspectionDue(tool) && (
-                                  <Badge variant="warning" className="ml-2">
+                                  <Badge variant="default" className="ml-2">
                                     {isRTL ? "فحص مستحق" : "Inspection Due"}
                                   </Badge>
                                 )}
@@ -1726,33 +1854,49 @@ const PowerTools = () => {
                       <p className="text-sm text-muted-foreground mt-1">ID: {selectedTool.toolId}</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => setDailyInspectionOpen(true)}
                       >
                         <Clipboard className="h-4 w-4 mr-2" />
                         {isRTL ? "الفحص اليومي" : "Daily Check"}
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => setMonthlyInspectionOpen(true)}
                       >
                         <CalendarCheck className="h-4 w-4 mr-2" />
                         {isRTL ? "الفحص الشهري" : "Monthly Check"}
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsMaintenanceLogOpen(true)}
+                      >
+                        <ScrollText className="h-4 w-4 mr-2" />
+                        {isRTL ? "سجل الصيانة" : "Maintenance Log"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsServiceReportOpen(true)}
+                      >
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                        {isRTL ? "تقرير الخدمة" : "Service Report"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={(e) => handleShareTool(selectedTool, e)}
                       >
                         <Share2 className="h-4 w-4 mr-2" />
                         {isRTL ? "مشاركة" : "Share"}
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={(e) => handleEditTool(selectedTool, e)}
                       >
                         <Edit className="h-4 w-4 mr-2" />
@@ -1862,6 +2006,105 @@ const PowerTools = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="maintenance-service-reports" className="mt-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>{isRTL ? "سجلات الصيانة وتقارير الخدمة" : "Maintenance Logs & Service Reports"}</CardTitle>
+                  <Button variant="outline" onClick={() => {
+                    setMaintenanceLogs([]);
+                    setServiceReports([]);
+                    toast({
+                      title: isRTL ? "تم المسح" : "Cleared",
+                      description: isRTL ? "تم مسح جميع سجلات الصيانة وتقارير الخدمة." : "All maintenance logs and service reports have been cleared.",
+                    });
+                  }}>
+                    {isRTL ? "مسح السجلات" : "Clear Logs"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="maintenance-logs" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 gap-2 p-1 bg-muted rounded-lg mb-4">
+                    <TabsTrigger value="maintenance-logs">{isRTL ? "سجلات الصيانة" : "Maintenance Logs"}</TabsTrigger>
+                    <TabsTrigger value="service-reports">{isRTL ? "تقارير الخدمة" : "Service Reports"}</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="maintenance-logs">
+                    {maintenanceLogs.length > 0 ? (
+                      <div className="space-y-4">
+                        {maintenanceLogs.map((log, index) => (
+                          <Card key={index} className="border-l-4 border-blue-500">
+                            <CardHeader className="p-4 pb-2">
+                              <CardTitle className="text-lg flex items-center">
+                                <ClipboardList className="h-5 w-5 mr-2 text-blue-600" />
+                                {isRTL ? "سجل الصيانة" : "Maintenance Log"} #{index + 1}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0 text-sm">
+                              <p><strong>{isRTL ? "المعدات:" : "Equipment:"}</strong> {log.equipmentInfo.typeOfEquipment}</p>
+                              <p><strong>{isRTL ? "الرقم التسلسلي:" : "Serial Number:"}</strong> {log.equipmentInfo.serialNumber}</p>
+                              <p><strong>{isRTL ? "الموقع:" : "Location:"}</strong> {log.equipmentInfo.location}</p>
+                              <h4 className="font-semibold mt-3 mb-2">{isRTL ? "الأنشطة:" : "Activities:"}</h4>
+                              <div className="space-y-2">
+                                {log.maintenanceActivities.map((activity: any, actIndex: number) => (
+                                  <div key={actIndex} className="border-t pt-2">
+                                    <p><strong>{isRTL ? "التاريخ:" : "Date:"}</strong> {format(new Date(activity.date), "PPP")}</p>
+                                    <p><strong>{isRTL ? "الوصف:" : "Description:"}</strong> {activity.description}</p>
+                                    <p><strong>{isRTL ? "تم بواسطة:" : "Performed By:"}</strong> {activity.performedBy}</p>
+                                    {activity.nextActivityDue && <p><strong>{isRTL ? "التالي المستحق:" : "Next Due:"}</strong> {format(new Date(activity.nextActivityDue), "PPP")}</p>}
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">{isRTL ? "لا توجد سجلات صيانة متاحة." : "No maintenance logs available."}</p>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="service-reports">
+                    {serviceReports.length > 0 ? (
+                      <div className="space-y-4">
+                        {serviceReports.map((report, index) => (
+                          <Card key={index} className="border-l-4 border-green-500">
+                            <CardHeader className="p-4 pb-2">
+                              <CardTitle className="text-lg flex items-center">
+                                <ClipboardList className="h-5 w-5 mr-2 text-green-600" />
+                                {isRTL ? "تقرير الخدمة" : "Service Report"} #{report.reportNumber}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0 text-sm">
+                              <p><strong>{isRTL ? "العميل:" : "Customer:"}</strong> {report.customerDetails.customerName}</p>
+                              <p><strong>{isRTL ? "الموقع:" : "Location:"}</strong> {report.customerDetails.serviceLocation}</p>
+                              <p><strong>{isRTL ? "تاريخ الخدمة:" : "Service Date:"}</strong> {format(new Date(report.equipmentDetails.serviceDate), "PPP")}</p>
+                              <p><strong>{isRTL ? "الشكوى:" : "Complaint:"}</strong> {report.serviceDetails.natureOfComplaint}</p>
+                              <p><strong>{isRTL ? "الوصف:" : "Description:"}</strong> {report.serviceDetails.detailedServiceDescription}</p>
+                              {report.serviceDetails.partsUsed.length > 0 && (
+                                <>
+                                  <h4 className="font-semibold mt-3 mb-2">{isRTL ? "الأجزاء المستخدمة:" : "Parts Used:"}</h4>
+                                  <ul className="list-disc pl-5">
+                                    {report.serviceDetails.partsUsed.map((part: any, partIndex: number) => (
+                                      <li key={partIndex}>{part.name} ({part.quantity} x {part.unitCost})</li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">{isRTL ? "لا توجد تقارير خدمة متاحة." : "No service reports available."}</p>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Image Preview Dialog */}
@@ -1884,7 +2127,8 @@ const PowerTools = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Share Tool Modal */}        <ShareToolModal
+        {/* Share Tool Modal */}
+        <ShareToolModal
           open={isShareModalOpen}
           onOpenChange={setIsShareModalOpen}
           tool={selectedTool}
@@ -1894,7 +2138,8 @@ const PowerTools = () => {
         />
 
         {selectedTool && (
-          <>            <PowerToolDailyChecklistDialog
+          <>
+            <PowerToolDailyChecklistDialog
               powerTool={selectedTool}
               open={dailyInspectionOpen}
               onOpenChange={setDailyInspectionOpen}
@@ -1905,6 +2150,20 @@ const PowerTools = () => {
               open={monthlyInspectionOpen}
               onOpenChange={setMonthlyInspectionOpen}
               onSubmit={handleMonthlyInspectionSubmit}
+            />
+            <EquipmentMaintenanceLogModal
+              open={isMaintenanceLogOpen}
+              onOpenChange={setIsMaintenanceLogOpen}
+              onSubmit={handleMaintenanceLogSubmit}
+              equipment={selectedTool ? mapPowerToolToEquipment(selectedTool) : null}
+              loading={false}
+            />
+            <ServiceReportModal
+              open={isServiceReportOpen}
+              onOpenChange={setIsServiceReportOpen}
+              onSubmit={handleServiceReportSubmit}
+              equipment={selectedTool ? mapPowerToolToEquipment(selectedTool) : null}
+              loading={false}
             />
           </>
         )}
