@@ -1663,8 +1663,8 @@ const LiftingTools = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
-            <TabsTrigger value="list" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-4 gap-2 p-1 bg-muted rounded-lg">
+        <TabsTrigger value="list" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               {isRTL ? "قائمة الملحقات" : "Accessory List"}
             </TabsTrigger>
