@@ -26,6 +26,7 @@ import { MonthlyInspectionDialog } from "./VehicleMonthlyInspectionDialog";
 import { EquipmentMaintenanceLogModal } from "@/components/equipment/EquipmentMaintenanceLogModal";
 import { ServiceReportModal } from "@/components/equipment/ServiceReportModal";
 import { useToast } from "@/components/ui/use-toast";
+import QRCode from "react-qr-code";
 
 // Mock data for history and maintenance
 const mockHistory = [
@@ -68,6 +69,7 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
   const [isMonthlyChecklistOpen, setIsMonthlyChecklistOpen] = useState(false);
   const [isMaintenanceLogOpen, setIsMaintenanceLogOpen] = useState(false);
   const [isServiceReportOpen, setIsServiceReportOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([
     {
       id: "ml-001",
@@ -225,6 +227,10 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
           <Button variant="outline" size="sm" onClick={() => setIsServiceReportOpen(true)}>
             <ClipboardList className="h-4 w-4 mr-2" />
             {isRTL ? "تقرير الخدمة" : "Service Report"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsQrModalOpen(true)}>
+            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M7 17v1a3 3 0 0 0 3 3h1"/></svg>
+            {isRTL ? "رمز QR" : "Generate QR Code"}
           </Button>
           {isEditing ? (
             <>
@@ -712,6 +718,21 @@ export function VehicleDetail({ vehicle, className, onBack, onUpdateInspection }
         onSubmit={handleServiceReportSubmit}
         loading={false}
       />
+
+      {/* QR Code Modal */}
+      <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
+        <DialogContent className="flex flex-col items-center">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? "رمز الاستجابة السريعة للمركبة" : "Vehicle QR Code"}</DialogTitle>
+          </DialogHeader>
+          <div className="bg-white p-4 rounded-lg">
+            <QRCode value={vehicle.plateNumber || vehicle.id || vehicle.name} size={180} />
+          </div>
+          <Button className="mt-4" onClick={() => setIsQrModalOpen(false)}>
+            {isRTL ? "إغلاق" : "Close"}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

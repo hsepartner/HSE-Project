@@ -49,6 +49,7 @@ import { DocumentType, DocumentStatus } from "@/types/equipment";
 import { EquipmentMaintenanceLogModal } from "./EquipmentMaintenanceLogModal";
 import { ServiceReportModal } from "./ServiceReportModal";
 import { useToast } from "@/components/ui/use-toast";
+import QRCode from "react-qr-code";
 
 interface EquipmentDetailProps {
   equipment: Equipment;
@@ -77,6 +78,8 @@ export function EquipmentDetail({
   const [isServiceReportOpen, setIsServiceReportOpen] = useState(false);
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]); // To store submitted maintenance logs
   const [serviceReports, setServiceReports] = useState<any[]>([]); // To store submitted service reports
+  // State for QR code modal
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -271,6 +274,11 @@ export function EquipmentDetail({
           <Button variant="outline" size="sm" onClick={() => setIsServiceReportOpen(true)}>
             <ClipboardList className="h-4 w-4 mr-2" />
             {isRTL ? "تقرير الخدمة" : "Service Report"}
+          </Button>
+          {/* QR Code Button */}
+          <Button variant="outline" size="sm" onClick={() => setIsQrModalOpen(true)}>
+            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M7 17v1a3 3 0 0 0 3 3h1"/></svg>
+            {isRTL ? "رمز QR" : "Generate QR Code"}
           </Button>
           {isEditing ? (
             <>
@@ -736,6 +744,21 @@ export function EquipmentDetail({
         onSubmit={handleServiceReportSubmit}
         loading={false}
       />
+
+      {/* QR Code Modal */}
+      <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
+        <DialogContent className="flex flex-col items-center">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? "رمز الاستجابة السريعة للمعدة" : "Equipment QR Code"}</DialogTitle>
+          </DialogHeader>
+          <div className="bg-white p-4 rounded-lg">
+            <QRCode value={equipment.serialNumber || equipment.id || equipment.name} size={180} />
+          </div>
+          <Button className="mt-4" onClick={() => setIsQrModalOpen(false)}>
+            {isRTL ? "إغلاق" : "Close"}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

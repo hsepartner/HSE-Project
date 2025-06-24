@@ -48,6 +48,7 @@ import { EquipmentMaintenanceLogModal } from '@/components/equipment/EquipmentMa
 import { ServiceReportModal } from '@/components/equipment/ServiceReportModal';
 import type { DailyInspection, MonthlyInspection } from '@/types/inspection';
 import type { Equipment } from '@/types/equipment';
+import QRCode from "react-qr-code";
 
 // Lifting Accessory interface with project field
 interface LiftingAccessory {
@@ -445,6 +446,7 @@ const LiftingTools = () => {
   const [isServiceReportOpen, setIsServiceReportOpen] = useState(false); // New state for service report modal
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]); // State to hold maintenance logs
   const [serviceReports, setServiceReports] = useState<any[]>([]); // State to hold service reports
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   
   // Form state for bio-data entry
   const [formData, setFormData] = useState<Partial<LiftingAccessory>>({
@@ -1867,12 +1869,21 @@ const LiftingTools = () => {
             {selectedAccessory ? (
               <Card>
                 <CardHeader>
-                  <div className="flex justify-between items-start">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                     <div>
                       <CardTitle>{selectedAccessory.accessoryName}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">ID: {selectedAccessory.accessoryId}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-start sm:justify-end">
+                      {/* QR Code Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsQrModalOpen(true)}
+                      >
+                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M7 17v1a3 3 0 0 0 3 3h1"/></svg>
+                        {isRTL ? "رمز QR" : "Generate QR Code"}
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -1921,7 +1932,7 @@ const LiftingTools = () => {
                         <Edit className="h-4 w-4 mr-2" />
                         {isRTL ? "تعديل" : "Edit"}
                       </Button>
-                      <Button variant="outline" onClick={() => {
+                      <Button variant="outline" size="sm" onClick={() => {
                         setViewMode('list');
                         setActiveTab('list');
                         setSelectedAccessory(null);
@@ -1931,6 +1942,24 @@ const LiftingTools = () => {
                     </div>
                   </div>
                 </CardHeader>
+                {/* QR Code Modal */}
+                <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
+                  <DialogContent className="flex flex-col items-center">
+                    <DialogHeader>
+                      <DialogTitle>{isRTL ? "رمز الاستجابة السريعة للملحق" : "Lifting Accessory QR Code"}</DialogTitle>
+                    </DialogHeader>
+                    <div className="bg-white p-4 rounded-lg">
+                      {selectedAccessory ? (
+                        <QRCode value={selectedAccessory.accessoryId || selectedAccessory.id || selectedAccessory.accessoryName} size={180} />
+                      ) : null}
+                    </div>
+                    <div className="mt-4 w-full flex justify-center">
+                      <Button onClick={() => setIsQrModalOpen(false)}>
+                        {isRTL ? "إغلاق" : "Close"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">

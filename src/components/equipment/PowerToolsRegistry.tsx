@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
+import QRCode from "react-qr-code";
 
 // Enhanced Equipment interface
 interface PowerTool {
@@ -198,6 +199,12 @@ const PowerToolsRegistry = () => {
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof PowerTool, string>>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Remove image handler
+  const removeImage = () => {
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, image: "" }));
+  };
 
   // Form validation
   const validateForm = () => {
@@ -380,6 +387,8 @@ const PowerToolsRegistry = () => {
       t.nextCalibrationDue && new Date(t.nextCalibrationDue) <= new Date()
     ).length
   };
+
+  const [qrModalTool, setQrModalTool] = useState<PowerTool | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50" dir={isRTL ? "rtl" : "ltr"}>
@@ -1092,6 +1101,9 @@ const PowerToolsRegistry = () => {
                           <Button variant="ghost" size="sm">
                             <Settings className="h-4 w-4" />
                           </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setQrModalTool(tool)} title={isRTL ? "رمز QR" : "QR Code"}>
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M7 17v1a3 3 0 0 0 3 3h1"/></svg>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -1138,6 +1150,23 @@ const PowerToolsRegistry = () => {
               />
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={!!qrModalTool} onOpenChange={(open) => !open && setQrModalTool(null)}>
+        <DialogContent className="flex flex-col items-center">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? "رمز الاستجابة السريعة للأداة" : "Tool QR Code"}</DialogTitle>
+          </DialogHeader>
+          <div className="bg-white p-4 rounded-lg">
+            {qrModalTool && (
+              <QRCode value={qrModalTool.toolId || qrModalTool.id || qrModalTool.name} size={180} />
+            )}
+          </div>
+          <Button className="mt-4" onClick={() => setQrModalTool(null)}>
+            {isRTL ? "إغلاق" : "Close"}
+          </Button>
         </DialogContent>
       </Dialog>
     </div>
