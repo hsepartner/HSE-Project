@@ -865,3 +865,5 @@ export function DailyChecklistDialog({
     </Dialog>
   );
 }
+
+export { INSPECTION_ITEMS };

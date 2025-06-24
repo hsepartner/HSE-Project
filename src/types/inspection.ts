@@ -7,6 +7,7 @@ export interface InspectionItem {
   isRequired: boolean;
   status: 'not-checked' | 'passed' | 'failed';
   comment?: string;
+  action?: string;
 }
 
 // Base inspection interface
@@ -27,6 +28,7 @@ export interface DailyInspection extends BaseInspection {
   manufacturer: string;
   modelNumber: string;
   powerToolId: string;
+  nextInspectionDate?: string;
 }
 
 // Monthly inspections

@@ -937,3 +937,5 @@ export function MonthlyInspectionDialog({
     </Dialog>
   );
 }
+
+export { INSPECTION_ITEMS };

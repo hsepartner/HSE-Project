@@ -17,12 +17,16 @@ import {
   History, 
   MapPin, 
   User, 
+  Settings, 
+  Activity, 
+  PenTool, 
   Tag, 
   Edit, 
   Save, 
   X, 
   Upload, 
   FileText, 
+  MessageSquare,
   Eye, 
   ArrowLeft,
   CheckCircle2,
@@ -50,6 +54,8 @@ import { EquipmentMaintenanceLogModal } from "./EquipmentMaintenanceLogModal";
 import { ServiceReportModal } from "./ServiceReportModal";
 import { useToast } from "@/components/ui/use-toast";
 import QRCode from "react-qr-code";
+import { DailyInspectionReportDialog } from "./DailyInspectionReportDialog";
+import { MonthlyInspectionReportDialog } from "./MonthlyInspectionReportDialog";
 
 interface EquipmentDetailProps {
   equipment: Equipment;
@@ -80,6 +86,16 @@ export function EquipmentDetail({
   const [serviceReports, setServiceReports] = useState<any[]>([]); // To store submitted service reports
   // State for QR code modal
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  // Add state for report dialogs
+  const [selectedDailyInspection, setSelectedDailyInspection] = useState<DailyInspection | null>(null);
+  const [isDailyReportOpen, setIsDailyReportOpen] = useState(false);
+  const [selectedMonthlyInspection, setSelectedMonthlyInspection] = useState<MonthlyInspection | null>(null);
+  const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
+  // Add state for maintenance/service report dialogs
+  const [selectedMaintenanceLog, setSelectedMaintenanceLog] = useState<any | null>(null);
+  const [isMaintenanceLogReportOpen, setIsMaintenanceLogReportOpen] = useState(false);
+  const [selectedServiceReport, setSelectedServiceReport] = useState<any | null>(null);
+  const [isServiceReportDialogOpen, setIsServiceReportDialogOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -574,13 +590,24 @@ export function EquipmentDetail({
                             {isRTL ? "بواسطة: " : "By: "}{inspection.operatorName}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end gap-1">
                           <div>{new Date(inspection.date).toLocaleDateString()}</div>
                           <Badge variant={inspection.status === 'completed' ? "default" : "secondary"}>
                             {inspection.status === 'completed' 
                               ? (isRTL ? "مكتمل" : "Completed")
                               : (isRTL ? "غير مكتمل" : "Incomplete")}
                           </Badge>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="mt-1"
+                            onClick={() => {
+                              setSelectedDailyInspection(inspection);
+                              setIsDailyReportOpen(true);
+                            }}
+                          >
+                            {isRTL ? "عرض التقرير" : "View Report"}
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -607,13 +634,24 @@ export function EquipmentDetail({
                             {new Date(inspection.nextInspectionDate).toLocaleDateString()}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end gap-1">
                           <div>{new Date(inspection.date).toLocaleDateString()}</div>
                           <Badge variant={inspection.status === 'completed' ? "default" : "secondary"}>
                             {inspection.status === 'completed'
                               ? (isRTL ? "مكتمل" : "Completed")
                               : (isRTL ? "غير مكتمل" : "Incomplete")}
                           </Badge>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="mt-1"
+                            onClick={() => {
+                              setSelectedMonthlyInspection(inspection);
+                              setIsMonthlyReportOpen(true);
+                            }}
+                          >
+                            {isRTL ? "عرض التقرير" : "View Report"}
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -672,6 +710,17 @@ export function EquipmentDetail({
                           <p className="text-sm text-muted-foreground">
                             {isRTL ? "بواسطة: " : "By: "}{log.footer?.supervisorName || 'N/A'}
                           </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mt-2"
+                            onClick={() => {
+                              setSelectedMaintenanceLog(log);
+                              setIsMaintenanceLogReportOpen(true);
+                            }}
+                          >
+                            {isRTL ? "عرض التقرير" : "View Report"}
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -702,6 +751,17 @@ export function EquipmentDetail({
                           <p className="text-sm text-muted-foreground">
                             {isRTL ? "العميل: " : "Customer: "}{report.customerDetails?.customerName || 'N/A'}
                           </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mt-2"
+                            onClick={() => {
+                              setSelectedServiceReport(report);
+                              setIsServiceReportDialogOpen(true);
+                            }}
+                          >
+                            {isRTL ? "عرض التقرير" : "View Report"}
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -745,6 +805,41 @@ export function EquipmentDetail({
         loading={false}
       />
 
+      {/* Daily Inspection Report Dialog */}
+      {selectedDailyInspection && (
+        <DailyInspectionReportDialog
+          open={isDailyReportOpen}
+          onOpenChange={setIsDailyReportOpen}
+          inspection={selectedDailyInspection}
+          equipment={equipment}
+          headerFields={{
+            machinery: equipment.name,
+            trafficPlateNumber: equipment.trafficPlateNumber || '',
+            company: equipment.company || '',
+            month: selectedDailyInspection.date ? new Date(selectedDailyInspection.date).toLocaleString('default', { month: 'long', year: 'numeric' }) : '',
+            issueDate: selectedDailyInspection.date ? new Date(selectedDailyInspection.date).toISOString().split('T')[0] : '',
+            project: equipment.project || '',
+          }}
+        />
+      )}
+
+      {/* Monthly Inspection Report Dialog */}
+      {selectedMonthlyInspection && (
+        <MonthlyInspectionReportDialog
+          open={isMonthlyReportOpen}
+          onOpenChange={setIsMonthlyReportOpen}
+          inspection={selectedMonthlyInspection}
+          equipment={equipment}
+          headerFields={{
+            project: equipment.project || '',
+            subcontractor: equipment.subcontractor || '',
+            chassisNo: equipment.chassisNo || '',
+            driverName: selectedMonthlyInspection.driverName || '',
+            inspectorName: selectedMonthlyInspection.technicianName || '',
+          }}
+        />
+      )}
+
       {/* QR Code Modal */}
       <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
         <DialogContent className="flex flex-col items-center">
@@ -759,6 +854,506 @@ export function EquipmentDetail({
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Maintenance Log Report Dialog */}
+      {selectedMaintenanceLog && (
+  <Dialog open={isMaintenanceLogReportOpen} onOpenChange={setIsMaintenanceLogReportOpen}>
+    <DialogContent className="w-[95vw] max-w-[1200px] h-[90vh] overflow-hidden rounded-lg shadow-lg bg-background border">
+      {/* Header Section */}
+      <DialogHeader className="pb-4 border-b border-border bg-card px-6 pt-6">
+        <DialogTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary rounded-md">
+              <Wrench className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                {isRTL ? "تقرير سجل الصيانة" : "Maintenance Log Report"}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {isRTL ? `تم في ${new Date(selectedMaintenanceLog.createdAt || Date.now()).toLocaleDateString('ar')}` : `Generated on ${new Date(selectedMaintenanceLog.createdAt || Date.now()).toLocaleDateString()}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
+              {isRTL ? 'سجل صيانة' : 'Maintenance Log'}
+            </div>
+          </div>
+        </DialogTitle>
+      </DialogHeader>
+
+      {/* Scrollable Content */}
+      <div className="overflow-y-auto flex-1 px-6 py-4 space-y-6">
+        
+        {/* Equipment Information Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-500 rounded-md">
+              <Settings className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "معلومات المعدات" : "Equipment Information"}
+            </h3>
+          </div>
+          
+          {Object.keys(selectedMaintenanceLog.equipmentInfo || {}).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Object.entries(selectedMaintenanceLog.equipmentInfo || {}).map(([key, value]) => (
+                <div key={key} className="bg-muted p-4 rounded-md border border-border">
+                  <div className="text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </div>
+                  <div className="text-sm font-semibold text-muted-foreground break-words">
+                    {value || (isRTL ? 'غير محدد' : 'Not specified')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Settings className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد معلومات معدات متاحة' : 'No equipment information available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Maintenance Activities Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-green-500 rounded-md">
+              <Activity className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "أنشطة الصيانة" : "Maintenance Activities"}
+            </h3>
+            <div className="ml-auto px-2 py-1 bg-status-valid text-status-valid-foreground rounded-full text-xs font-medium">
+              {selectedMaintenanceLog.maintenanceActivities?.length || 0} {isRTL ? 'نشاط' : 'Activities'}
+            </div>
+          </div>
+          
+          {selectedMaintenanceLog.maintenanceActivities && selectedMaintenanceLog.maintenanceActivities.length > 0 ? (
+            <div className="space-y-4">
+              {selectedMaintenanceLog.maintenanceActivities.map((activity: any, index: number) => (
+                <div key={activity.id || index} className="bg-muted p-4 rounded-md border border-border hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      {index + 1}
+                    </div>
+                    <h4 className="font-semibold text-card-foreground">
+                      {isRTL ? `النشاط ${index + 1}` : `Activity ${index + 1}`}
+                    </h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Object.entries(activity).map(([key, value]) => (
+                      <div key={key} className="bg-background p-3 rounded-sm border border-border">
+                        <div className="text-xs font-medium text-green-500 uppercase tracking-wide mb-1">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </div>
+                        <div className="text-sm text-foreground break-words">
+                          {value || (isRTL ? 'غير محدد' : 'Not specified')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد أنشطة صيانة مسجلة' : 'No maintenance activities recorded'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Signatures Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-500 rounded-md">
+              <PenTool className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "التوقيعات والمراجعة" : "Signatures & Review"}
+            </h3>
+          </div>
+          
+          {Object.keys(selectedMaintenanceLog.footer || {}).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(selectedMaintenanceLog.footer || {}).map(([key, value]) => (
+                <div key={key} className="bg-muted p-4 rounded-md border border-border">
+                  <div className="text-xs font-medium text-purple-500 uppercase tracking-wide mb-1">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </div>
+                  <div className="text-sm font-semibold text-muted-foreground break-words">
+                    {value || (isRTL ? 'غير محدد' : 'Not specified')}
+                  </div>
+                  {/* Signature line visual */}
+                  <div className="mt-3 border-b-2 border-dashed border-border pb-2">
+                    <div className="text-xs text-purple-500">{isRTL ? 'خط التوقيع' : 'Signature Line'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <PenTool className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد توقيعات متاحة' : 'No signatures available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-card p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500 rounded-md">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-blue-500 font-medium">{isRTL ? 'تاريخ السجل' : 'Log Date'}</div>
+                <div className="text-lg font-bold text-card-foreground">
+                  {new Date(selectedMaintenanceLog.createdAt || Date.now()).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-card p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500 rounded-md">
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-green-500 font-medium">{isRTL ? 'الأنشطة المكتملة' : 'Activities Completed'}</div>
+                <div className="text-lg font-bold text-card-foreground">
+                  {selectedMaintenanceLog.maintenanceActivities?.length || 0}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-card p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500 rounded-md">
+                <User className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-purple-500 font-medium">{isRTL ? 'المراجعين' : 'Reviewers'}</div>
+                <div className="text-lg font-bold text-card-foreground">
+                  {Object.keys(selectedMaintenanceLog.footer || {}).length}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons - Fixed at bottom */}
+      <div className="flex justify-end gap-3 p-6 border-t border-border bg-card">
+        <Button 
+          variant="outline" 
+          onClick={() => setIsMaintenanceLogReportOpen(false)} 
+          className="px-6 py-2 hover:bg-accent hover:text-accent-foreground transition-all duration-300"
+        >
+          {isRTL ? "إغلاق" : "Close"}
+        </Button>
+        <Button 
+          onClick={() => window.print()} 
+          className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          {isRTL ? "طباعة التقرير" : "Print Report"}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+)}
+
+      {/* Service Report Dialog */}
+     {/* Service Report Dialog */}
+{selectedServiceReport && (
+  <Dialog open={isServiceReportDialogOpen} onOpenChange={setIsServiceReportDialogOpen}>
+    <DialogContent className="w-[95vw] max-w-[1200px] h-[90vh] overflow-hidden rounded-lg shadow-lg bg-background border">
+      {/* Header Section */}
+      <DialogHeader className="pb-4 border-b border-border bg-card px-6 pt-6">
+        <DialogTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary rounded-md">
+              <FileText className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                {isRTL ? "تقرير الخدمة" : "Service Report"}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {isRTL ? `تم في ${new Date(selectedServiceReport.createdAt || Date.now()).toLocaleDateString('ar')}` : `Generated on ${new Date(selectedServiceReport.createdAt || Date.now()).toLocaleDateString()}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
+              {isRTL ? 'تقرير خدمة' : 'Service Report'}
+            </div>
+          </div>
+        </DialogTitle>
+      </DialogHeader>
+
+      {/* Scrollable Content */}
+      <div className="overflow-y-auto flex-1 px-6 py-4 space-y-6">
+        
+        {/* Customer Details Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-500 rounded-md">
+              <User className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "تفاصيل العميل" : "Customer Details"}
+            </h3>
+          </div>
+          
+          {Object.keys(selectedServiceReport.customerDetails || {}).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Object.entries(selectedServiceReport.customerDetails || {}).map(([key, value]) => (
+                <div key={key} className="bg-muted p-4 rounded-md border border-border">
+                  <div className="text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </div>
+                  <div className="text-sm font-semibold text-muted-foreground break-words">
+                    {value || (isRTL ? 'غير محدد' : 'Not specified')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد تفاصيل عميل متاحة' : 'No customer details available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Equipment Details Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-orange-500 rounded-md">
+              <Settings className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "تفاصيل المعدات" : "Equipment Details"}
+            </h3>
+          </div>
+          
+          {Object.keys(selectedServiceReport.equipmentDetails || {}).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Object.entries(selectedServiceReport.equipmentDetails || {}).map(([key, value]) => (
+                <div key={key} className="bg-muted p-4 rounded-md border border-border">
+                  <div className="text-xs font-medium text-orange-500 uppercase tracking-wide mb-1">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </div>
+                  <div className="text-sm font-semibold text-muted-foreground break-words">
+                    {value || (isRTL ? 'غير محدد' : 'Not specified')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Settings className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد تفاصيل معدات متاحة' : 'No equipment details available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Service Details Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-green-500 rounded-md">
+              <Wrench className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "تفاصيل الخدمة" : "Service Details"}
+            </h3>
+          </div>
+          
+          {Object.keys(selectedServiceReport.serviceDetails || {}).length > 0 ? (
+            <div className="space-y-4">
+              {Object.entries(selectedServiceReport.serviceDetails || {}).map(([key, value]) => (
+                <div key={key} className="bg-muted p-4 rounded-md border border-border">
+                  <div className="text-xs font-medium text-green-500 uppercase tracking-wide mb-2">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {Array.isArray(value) ? (
+                      <div className="space-y-2">
+                        {value.map((item, index) => (
+                          <div key={index} className="bg-background p-3 rounded-sm border border-border">
+                            <div className="font-medium text-xs text-green-500 mb-1">
+                              {isRTL ? `العنصر ${index + 1}` : `Item ${index + 1}`}
+                            </div>
+                            <div className="text-sm">
+                              {typeof item === 'object' ? (
+                                <div className="space-y-1">
+                                  {Object.entries(item).map(([k, v]) => (
+                                    <div key={k} className="flex justify-between">
+                                      <span className="font-medium text-muted-foreground">{k}:</span>
+                                      <span className="text-foreground">{String(v)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                String(item)
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-foreground break-words">
+                        {value || (isRTL ? 'غير محدد' : 'Not specified')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Wrench className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد تفاصيل خدمة متاحة' : 'No service details available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Customer Feedback Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-500 rounded-md">
+              <MessageSquare className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "ملاحظات العميل" : "Customer Feedback"}
+            </h3>
+          </div>
+          
+          {selectedServiceReport.customerFeedback ? (
+            <div className="bg-muted p-4 rounded-md border border-border">
+              <div className="text-sm text-foreground leading-relaxed">
+                {selectedServiceReport.customerFeedback}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد ملاحظات عميل متاحة' : 'No customer feedback available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Signatures Card */}
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-500 rounded-md">
+              <PenTool className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground">
+              {isRTL ? "التوقيعات" : "Signatures"}
+            </h3>
+          </div>
+          
+          {Object.keys(selectedServiceReport.signatures || {}).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(selectedServiceReport.signatures || {}).map(([key, value]) => (
+                <div key={key} className="bg-muted p-4 rounded-md border border-border">
+                  <div className="text-xs font-medium text-purple-500 uppercase tracking-wide mb-1">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </div>
+                  <div className="text-sm font-semibold text-muted-foreground break-words">
+                    {value || (isRTL ? 'غير محدد' : 'Not specified')}
+                  </div>
+                  {/* Signature line visual */}
+                  <div className="mt-3 border-b-2 border-dashed border-border pb-2">
+                    <div className="text-xs text-purple-500">{isRTL ? 'خط التوقيع' : 'Signature Line'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <PenTool className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{isRTL ? 'لا توجد توقيعات متاحة' : 'No signatures available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-card p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500 rounded-md">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-blue-500 font-medium">{isRTL ? 'تاريخ التقرير' : 'Report Date'}</div>
+                <div className="text-lg font-bold text-card-foreground">
+                  {new Date(selectedServiceReport.createdAt || Date.now()).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-card p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500 rounded-md">
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-green-500 font-medium">{isRTL ? 'حالة الخدمة' : 'Service Status'}</div>
+                <div className="text-lg font-bold text-card-foreground">
+                  {isRTL ? 'مكتملة' : 'Completed'}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-card p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500 rounded-md">
+                <User className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-purple-500 font-medium">{isRTL ? 'الموقعين' : 'Signatories'}</div>
+                <div className="text-lg font-bold text-card-foreground">
+                  {Object.keys(selectedServiceReport.signatures || {}).length}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons - Fixed at bottom */}
+      <div className="flex justify-end gap-3 p-6 border-t border-border bg-card">
+        <Button 
+          variant="outline" 
+          onClick={() => setIsServiceReportDialogOpen(false)} 
+          className="px-6 py-2 hover:bg-accent hover:text-accent-foreground transition-all duration-300"
+        >
+          {isRTL ? "إغلاق" : "Close"}
+        </Button>
+        <Button 
+          onClick={() => window.print()} 
+          className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          {isRTL ? "طباعة التقرير" : "Print Report"}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+)}
     </div>
   );
 }
