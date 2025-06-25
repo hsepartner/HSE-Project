@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2, Check, X, FileText, Eye, Play } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, FileText, Play, X, Check, AlertTriangle, Eye, CheckCircle2 } from "lucide-react";
 import type { PowerTool } from "@/types/power-tools";
 import { cn } from "@/lib/utils";
 import type { DailyInspection } from "@/types/inspection";
-import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 
 interface InspectionItem {
   id: string;
@@ -19,7 +21,8 @@ interface InspectionItem {
   descriptionAr: string;
   isRequired: boolean;
   status: "not-checked" | "passed" | "failed";
-  comment?: string; // Add comment field to support per-item comments
+  comment?: string;
+  action?: string;
 }
 
 interface PowerToolDailyInspection {
@@ -35,10 +38,10 @@ interface PowerToolDailyInspection {
   notes: string;
   status: "completed";
   powerToolId: string;
+  nextInspectionDate: string;
 }
 
-// Define inspection items with images and bilingual descriptions
-const INSPECTION_ITEMS = [
+const INSPECTION_ITEMS: InspectionItem[] = [
   {
     id: "fire-extinguisher",
     image: "/images/fire.png",
@@ -47,6 +50,7 @@ const INSPECTION_ITEMS = [
     titleAr: "طفاية الحريق",
     descriptionAr: "طفاية الحريق متوفرة",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "first-aid",
@@ -56,6 +60,7 @@ const INSPECTION_ITEMS = [
     titleAr: "صندوق الإسعافات الأولية",
     descriptionAr: "صندوق الإسعافات الأولية متوفر",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "oil-check",
@@ -65,6 +70,7 @@ const INSPECTION_ITEMS = [
     titleAr: "فحص الزيت",
     descriptionAr: "فحص مستوى الزيت، لا يوجد تسرب للزيت",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "windshield",
@@ -74,15 +80,17 @@ const INSPECTION_ITEMS = [
     titleAr: "الزجاج الأمامي",
     descriptionAr: "الزجاج الأمامي نظيف وخالي من الأضرار",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "lights",
     image: "/images/headlights.png",
     title: "Lights",
-    description: "Head lights, Indicator lights, break lights are operational",
+    description: "Head lights, Indicator lights, brake lights are operational",
     titleAr: "الأضواء",
     descriptionAr: "المصابيح الأمامية، إشارات الانعطاف، أضواء الفرامل تعمل",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "tires",
@@ -92,6 +100,7 @@ const INSPECTION_ITEMS = [
     titleAr: "حالة الإطارات",
     descriptionAr: "حالة الإطارات - الإطارات الأمامية / الخلفية",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "cabin",
@@ -101,6 +110,7 @@ const INSPECTION_ITEMS = [
     titleAr: "المقصورة",
     descriptionAr: "المقصورة مغلقة ونظام التكييف يعمل",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "reverse-alarm",
@@ -110,6 +120,7 @@ const INSPECTION_ITEMS = [
     titleAr: "إنذار الرجوع للخلف",
     descriptionAr: "إنذار الرجوع للخلف، البوق، المرايا تعمل",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "hoses",
@@ -119,6 +130,7 @@ const INSPECTION_ITEMS = [
     titleAr: "الخراطيم والأنابيب",
     descriptionAr: "الخراطيم ووصلات الأنابيب في حالة جيدة",
     isRequired: true,
+    status: "not-checked",
   },
   {
     id: "bucket",
@@ -128,6 +140,7 @@ const INSPECTION_ITEMS = [
     titleAr: "حالة الدلو",
     descriptionAr: "حالة الدلاء (الأسنان محمية)",
     isRequired: true,
+    status: "not-checked",
   },
 ];
 
@@ -146,20 +159,23 @@ export function PowerToolDailyChecklistDialog({
 }: PowerToolDailyChecklistDialogProps) {
   const { currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
-  // View state
-  const [currentStep, setCurrentStep] = useState(-1); // -1: overview, -2: report, >=0: individual
-  const [responses, setResponses] = useState<Record<string, { status?: "passed" | "failed"; comment: string; action?: string }>>({});
+  const { toast } = useToast();
+
+  const [currentStep, setCurrentStep] = useState(-1);
+  const [responses, setResponses] = useState<Record<string, { status?: "passed" | "failed"; action?: string; comment: string }>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showNextInsteadOfNo, setShowNextInsteadOfNo] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "individual">("list");
-  // Header fields
+  const [viewMode, setViewMode] = useState<"list" | "individual" | "lastReport">("list");
   const [project, setProject] = useState("");
   const [company, setCompany] = useState("");
   const [issueDate, setIssueDate] = useState("");
   const [month, setMonth] = useState("");
   const [nextInspectionDate, setNextInspectionDate] = useState("");
+  const [lastReports, setLastReports] = useState<PowerToolDailyInspection[]>([]);
+  const [selectedReportDate, setSelectedReportDate] = useState<string>("");
+  const [lastReportLoading, setLastReportLoading] = useState(false);
 
   const currentItem = currentStep >= 0 ? INSPECTION_ITEMS[currentStep] : null;
 
@@ -170,7 +186,7 @@ export function PowerToolDailyChecklistDialog({
       case "failed":
         return <X className="h-4 w-4 text-red-600" />;
       default:
-        return <Eye className="h-4 w-4 text-gray-400" />;
+        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
     }
   };
 
@@ -267,23 +283,44 @@ export function PowerToolDailyChecklistDialog({
         date: new Date().toISOString(),
         operatorId: "current-user-id",
         operatorName: powerTool.operatorName || "Unknown Operator",
-        toolName: powerTool.toolName,
         equipmentId: powerTool.id,
+        toolName: powerTool.toolName,
         serialNumber: powerTool.toolId,
         manufacturer: powerTool.manufacturer,
         modelNumber: powerTool.modelNumber,
         items: Object.entries(responses).map(([id, response]) => ({
           id,
           description: INSPECTION_ITEMS.find(item => item.id === id)?.description || '',
-          status: response.status,
+          isRequired: true,
+          status: response.status || "not-checked",
           comment: response.comment,
-          isRequired: true
+          action: response.action,
         })),
-        notes: '',
-        status: 'completed',
+        notes: project,
+        status: "completed",
         powerToolId: powerTool.id,
+        nextInspectionDate,
       };
       await onSubmit(inspection as DailyInspection);
+
+      const existingReports = JSON.parse(localStorage.getItem(`inspection_reports_${powerTool.id}`) || '[]');
+      localStorage.setItem(
+        `inspection_reports_${powerTool.id}`,
+        JSON.stringify([inspection, ...existingReports])
+      );
+
+      setLastReports((prev) => [
+        inspection,
+        ...prev.filter((report) => report.date !== inspection.date),
+      ]);
+
+      toast({
+        title: isRTL ? "تم حفظ التقرير" : "Report Saved",
+        description: isRTL ? "تم حفظ تقرير الفحص بنجاح" : "The inspection report has been saved successfully",
+        variant: "default",
+        duration: 3000,
+      });
+
       onOpenChange(false);
       setCurrentStep(-1);
       setResponses({});
@@ -307,12 +344,76 @@ export function PowerToolDailyChecklistDialog({
     setCompany("");
     setMonth("");
     setIssueDate("");
+    setNextInspectionDate("");
     setViewMode("list");
   };
 
+  async function fetchLastInspectionReports(powerToolId: string): Promise<PowerToolDailyInspection[]> {
+    const storedReports = JSON.parse(localStorage.getItem(`inspection_reports_${powerToolId}`) || '[]');
+    if (storedReports.length > 0) {
+      return storedReports;
+    }
+    return [
+      {
+        date: "2025-06-20",
+        status: "completed",
+        items: INSPECTION_ITEMS.map(item => ({
+          id: item.id,
+          description: item.description,
+          isRequired: true,
+          status: Math.random() > 0.3 ? "passed" : "failed",
+          comment: Math.random() > 0.7 ? "Sample comment" : "",
+          action: Math.random() > 0.7 ? "Sample action" : "",
+        })),
+        equipmentId: powerToolId,
+        operatorId: "user-1",
+        operatorName: "John Doe",
+        toolName: powerTool.toolName,
+        serialNumber: powerTool.toolId,
+        manufacturer: powerTool.manufacturer,
+        modelNumber: powerTool.modelNumber,
+        nextInspectionDate: "2025-07-20",
+        notes: "Sample project",
+        powerToolId: powerToolId,
+      },
+      {
+        date: "2025-06-15",
+        status: "completed",
+        items: INSPECTION_ITEMS.map(item => ({
+          id: item.id,
+          description: item.description,
+          isRequired: true,
+          status: Math.random() > 0.5 ? "passed" : "failed",
+          comment: Math.random() > 0.8 ? "Older comment" : "",
+          action: Math.random() > 0.8 ? "Older action" : "",
+        })),
+        equipmentId: powerToolId,
+        operatorId: "user-2",
+        operatorName: "Jane Doe",
+        toolName: powerTool.toolName,
+        serialNumber: powerTool.toolId,
+        manufacturer: powerTool.manufacturer,
+        modelNumber: powerTool.modelNumber,
+        nextInspectionDate: "2025-07-15",
+        notes: "Another project",
+        powerToolId: powerToolId,
+      },
+    ];
+  }
+
+  useEffect(() => {
+    if (viewMode === "lastReport" && powerTool.id) {
+      setLastReportLoading(true);
+      fetchLastInspectionReports(powerTool.id).then((reports) => {
+        setLastReports(reports);
+        setSelectedReportDate(reports[0]?.date || "");
+        setLastReportLoading(false);
+      });
+    }
+  }, [viewMode, powerTool.id]);
+
   if (!powerTool || !open) return null;
 
-  // Completion Report View
   if (currentStep === -2) {
     const stats = getCompletionStats();
     return (
@@ -324,7 +425,17 @@ export function PowerToolDailyChecklistDialog({
               {isRTL ? "تقرير إكمال الفحص" : "Inspection Completion Report"}
             </DialogTitle>
           </DialogHeader>
-          {/* Checklist Header Fields */}
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCurrentStep(-1);
+              setViewMode("list");
+            }}
+            className="mb-4 hover:bg-gray-100 transition-all w-fit"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            {isRTL ? "العودة للقائمة" : "Back to List"}
+          </Button>
           <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
             <h3 className="font-semibold text-lg mb-3 text-gray-800">POWER TOOL DAILY INSPECTION CHECKLIST</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
@@ -336,7 +447,6 @@ export function PowerToolDailyChecklistDialog({
               <div><span className="font-medium">PROJECT:</span> {project}</div>
             </div>
           </div>
-          {/* Overall Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
               { value: stats.total, label: isRTL ? "إجمالي العناصر" : "Total Items", color: "blue" },
@@ -350,7 +460,6 @@ export function PowerToolDailyChecklistDialog({
               </div>
             ))}
           </div>
-          {/* Tool Information */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
             <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "معلومات الأداة" : "Tool Information"}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
@@ -359,10 +468,8 @@ export function PowerToolDailyChecklistDialog({
               <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {project}</div>
             </div>
           </div>
-          {/* Detailed Results */}
           <div className="space-y-4">
             <h3 className="font-semibold text-lg text-gray-800">{isRTL ? "النتائج التفصيلية" : "Detailed Results"}</h3>
-            {/* Failed Items */}
             {stats.failed > 0 && (
               <div className="bg-red-50 p-4 rounded-lg shadow-sm">
                 <h4 className="font-medium text-red-800 mb-3 flex items-center gap-2">
@@ -391,7 +498,6 @@ export function PowerToolDailyChecklistDialog({
                 </div>
               </div>
             )}
-            {/* Passed Items */}
             <div className="bg-green-50 p-4 rounded-lg shadow-sm">
               <h4 className="font-medium text-green-800 mb-3 flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
@@ -407,7 +513,6 @@ export function PowerToolDailyChecklistDialog({
               </div>
             </div>
           </div>
-          {/* Next Inspection Date */}
           <div className="bg-blue-50 p-4 rounded-lg shadow-sm">
             <label className="block text-sm font-medium mb-2 text-gray-800">
               {isRTL ? "تاريخ الفحص القادم" : "Next Inspection Date"}
@@ -425,28 +530,185 @@ export function PowerToolDailyChecklistDialog({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          {/* Action Buttons */}
-          <div className="flex justify-between pt-4 border-t">
-            <Button variant="outline" onClick={() => setCurrentStep(-1)} className="hover:bg-gray-100 transition-all">
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              {isRTL ? "العودة للقائمة" : "Back to List"}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
+              <FileText className="h-4 w-4 mr-2" />
+              {isRTL ? "طباعة التقرير" : "Print Report"}
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
-                <FileText className="h-4 w-4 mr-2" />
-                {isRTL ? "طباعة التقرير" : "Print Report"}
-              </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting || !nextInspectionDate} className="bg-blue-600 hover:bg-blue-700 transition-all">
-                {isSubmitting ? (isRTL ? "جاري الحفظ..." : "Saving...") : (isRTL ? "حفظ التقرير" : "Save Report")}
-              </Button>
-            </div>
+            <Button onClick={handleSubmit} disabled={isSubmitting || !nextInspectionDate} className="bg-blue-600 hover:bg-blue-700 transition-all">
+              {isSubmitting ? (isRTL ? "جاري الحفظ..." : "Saving...") : (isRTL ? "حفظ التقرير" : "Save Report")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
     );
   }
 
-  // Initial Overview View (Enhanced List View)
+  if (viewMode === "lastReport") {
+    const selectedReport = lastReports.find(report => report.date === selectedReportDate);
+    const stats = selectedReport && selectedReport.items ? {
+      total: INSPECTION_ITEMS.length,
+      completed: selectedReport.items.length,
+      passed: selectedReport.items.filter((i) => i.status === "passed").length,
+      failed: selectedReport.items.filter((i) => i.status === "failed").length,
+      passRate: selectedReport.items.length > 0 ? Math.round((selectedReport.items.filter((i) => i.status === "passed").length / selectedReport.items.length) * 100) : 0,
+    } : { total: 0, completed: 0, passed: 0, failed: 0, passRate: 0 };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[95vw] max-w-[1200px] max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-2xl bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-gray-800">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              {isRTL ? "آخر تقرير فحص" : "Last Inspection Report"}
+            </DialogTitle>
+          </DialogHeader>
+          <Button
+            variant="outline"
+            onClick={() => setViewMode("list")}
+            className="mb-4 hover:bg-gray-100 transition-all w-fit"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            {isRTL ? "العودة للقائمة" : "Back to List"}
+          </Button>
+          {lastReportLoading ? (
+            <div className="py-8 text-center text-gray-500">{isRTL ? "جاري التحميل..." : "Loading..."}</div>
+          ) : lastReports.length > 0 ? (
+            <>
+              <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "اختيار تاريخ التقرير" : "Select Report Date"}</h3>
+                <Select
+                  value={selectedReportDate}
+                  onValueChange={(value) => setSelectedReportDate(value)}
+                >
+                  <SelectTrigger className="w-full max-w-[300px] border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    <SelectValue placeholder={isRTL ? "اختر تاريخ التقرير" : "Select report date"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lastReports.map((report) => (
+                      <SelectItem key={report.date} value={report.date}>
+                        {new Date(report.date).toLocaleDateString(isRTL ? "ar-EG" : "en-US")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedReport && (
+                <>
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                    <h3 className="font-semibold text-lg mb-3 text-gray-800">POWER TOOL DAILY INSPECTION CHECKLIST</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div><span className="font-medium">TOOL:</span> {selectedReport.toolName}</div>
+                      <div><span className="font-medium">TOOL ID:</span> {selectedReport.serialNumber}</div>
+                      <div><span className="font-medium">COMPANY:</span> {selectedReport.manufacturer}</div>
+                      <div><span className="font-medium">MONTH:</span> {new Date(selectedReport.date).toLocaleString('default', { month: 'long' })}</div>
+                      <div><span className="font-medium">ISSUE DATE:</span> {selectedReport.date.split('T')[0]}</div>
+                      <div><span className="font-medium">PROJECT:</span> {selectedReport.notes}</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    {[
+                      { value: stats.total, label: isRTL ? "إجمالي العناصر" : "Total Items", color: "blue" },
+                      { value: stats.passed, label: isRTL ? "نجح" : "Passed", color: "green" },
+                      { value: stats.failed, label: isRTL ? "فشل" : "Failed", color: "red" },
+                      { value: `${stats.passRate}%`, label: isRTL ? "معدل النجاح" : "Pass Rate", color: "purple" },
+                    ].map((stat, index) => (
+                      <div key={index} className={`bg-${stat.color}-50 p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-shadow`}>
+                        <div className={`text-2xl font-bold text-${stat.color}-600`}>{stat.value}</div>
+                        <div className={`text-sm text-${stat.color}-800`}>{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                    <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "معلومات الأداة" : "Tool Information"}</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div><span className="font-medium">{isRTL ? "اسم الأداة:" : "Tool Name:"}</span> {selectedReport.toolName}</div>
+                      <div><span className="font-medium">{isRTL ? "رقم الأداة:" : "Tool ID:"}</span> {selectedReport.serialNumber}</div>
+                      <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {selectedReport.notes}</div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg text-gray-800">{isRTL ? "النتائج التفصيلية" : "Detailed Results"}</h3>
+                    {stats.failed > 0 && (
+                      <div className="bg-red-50 p-4 rounded-lg shadow-sm">
+                        <h4 className="font-medium text-red-800 mb-3 flex items-center gap-2">
+                          <X className="h-5 w-5" />
+                          {isRTL ? "العناصر الفاشلة" : "Failed Items"}
+                        </h4>
+                        <div className="space-y-3">
+                          {INSPECTION_ITEMS.filter(item => {
+                            const reportItem = selectedReport.items.find(i => i.id === item.id);
+                            return reportItem?.status === "failed";
+                          }).map(item => (
+                            <div key={item.id} className="flex items-start gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                              <img src={item.image} alt="" className="w-10 h-10 object-cover rounded" />
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{isRTL ? item.titleAr : item.title}</div>
+                                {selectedReport.items.find(i => i.id === item.id)?.comment && (
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    <strong>{isRTL ? "ملاحظة:" : "Note:"}</strong> {selectedReport.items.find(i => i.id === item.id)?.comment}
+                                  </div>
+                                )}
+                                {selectedReport.items.find(i => i.id === item.id)?.action && (
+                                  <div className="text-sm text-red-600 mt-1">
+                                    <strong>{isRTL ? "الإجراء المطلوب:" : "Action Required:"}</strong> {selectedReport.items.find(i => i.id === item.id)?.action}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="bg-green-50 p-4 rounded-lg shadow-sm">
+                      <h4 className="font-medium text-green-800 mb-3 flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5" />
+                        {isRTL ? "العناصر الناجحة" : "Passed Items"}
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {INSPECTION_ITEMS.filter(item => {
+                          const reportItem = selectedReport.items.find(i => i.id === item.id);
+                          return reportItem?.status === "passed";
+                        }).map(item => (
+                          <div key={item.id} className="flex items-center gap-2 p-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            <img src={item.image} alt="" className="w-8 h-8 object-cover rounded" />
+                            <span className="text-sm">{isRTL ? item.titleAr : item.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg shadow-sm mt-6">
+                    <label className="block text-sm font-medium mb-2 text-gray-800">
+                      {isRTL ? "تاريخ الفحص القادم" : "Next Inspection Date"}
+                    </label>
+                    <Input
+                      type="date"
+                      value={selectedReport.nextInspectionDate || ""}
+                      readOnly
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all bg-gray-100 cursor-not-allowed"
+                    />
+                  </div>
+                </>
+              )}
+              <div className="text-xs text-gray-500 text-center pt-4 border-t mt-6">
+                ESPEC-HSE-F09 Issue Date: 17-5-2021 Rev. No. 03
+              </div>
+              <div className="flex justify-end pt-4 border-t mt-6">
+                <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
+                  <FileText className="h-4 w-4 mr-2" />
+                  {isRTL ? "طباعة التقرير" : "Print Report"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="py-8 text-center text-gray-500">{isRTL ? "لا يوجد تقارير سابقة" : "No previous reports found."}</div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   if (currentStep === -1) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -458,7 +720,15 @@ export function PowerToolDailyChecklistDialog({
             <div className="flex gap-2">
               <Button
                 variant="secondary"
-                onClick={() => alert("Last Inspection Report clicked")}
+                onClick={() => {
+                  setLastReportLoading(true);
+                  fetchLastInspectionReports(powerTool.id).then((reports) => {
+                    setLastReports(reports);
+                    setSelectedReportDate(reports[0]?.date || "");
+                    setLastReportLoading(false);
+                    setViewMode("lastReport");
+                  });
+                }}
                 className="hover:bg-gray-100 transition-all"
               >
                 <FileText className="h-4 w-4 mr-2" />
@@ -478,7 +748,6 @@ export function PowerToolDailyChecklistDialog({
               </Button>
             </div>
           </DialogHeader>
-          {/* Checklist Header Fields */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
@@ -491,23 +760,44 @@ export function PowerToolDailyChecklistDialog({
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">COMPANY:</label>
-                <Input value={company} onChange={e => setCompany(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Enter company" />
+                <Input
+                  value={company}
+                  onChange={e => setCompany(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Enter company"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">MONTH:</label>
-                <Input type="month" value={month} onChange={e => setMonth(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Select month" />
+                <Input
+                  type="month"
+                  value={month}
+                  onChange={e => setMonth(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Select month"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">ISSUE DATE:</label>
-                <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Select issue date" />
+                <Input
+                  type="date"
+                  value={issueDate}
+                  onChange={e => setIssueDate(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Select issue date"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">PROJECT:</label>
-                <Input value={project} onChange={e => setProject(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Enter project name" />
+                <Input
+                  value={project}
+                  onChange={e => setProject(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Enter project name"
+                />
               </div>
             </div>
           </div>
-          {/* Enhanced Inspection Items Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {INSPECTION_ITEMS.map((item) => (
               <div key={item.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
@@ -529,7 +819,6 @@ export function PowerToolDailyChecklistDialog({
                     <p className="text-xs text-gray-500 mb-3">
                       {isRTL ? item.descriptionAr : item.description}
                     </p>
-                    {/* Quick Action Buttons */}
                     <div className="flex gap-2 mb-2">
                       <Button
                         size="sm"
@@ -556,7 +845,6 @@ export function PowerToolDailyChecklistDialog({
                         {isRTL ? "لا" : "No"}
                       </Button>
                     </div>
-                    {/* Comments and Actions */}
                     {(responses[item.id]?.status === "failed" || showCommentBox) && (
                       <div className="space-y-2">
                         <Input
@@ -580,7 +868,6 @@ export function PowerToolDailyChecklistDialog({
               </div>
             ))}
           </div>
-          {/* Progress Summary */}
           <div className="bg-blue-50 p-4 rounded-lg mb-6 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-medium text-gray-800">{isRTL ? "ملخص التقدم" : "Progress Summary"}</h4>
@@ -607,7 +894,6 @@ export function PowerToolDailyChecklistDialog({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          {/* Action Buttons */}
           <div className="flex justify-between pt-4 border-t">
             <Button variant="outline" onClick={handleReset} className="hover:bg-gray-100 transition-all">
               {isRTL ? "إعادة تعيين" : "Reset"}
@@ -629,7 +915,6 @@ export function PowerToolDailyChecklistDialog({
               )}
             </div>
           </div>
-          {/* Reference Information */}
           <div className="text-xs text-gray-500 text-center pt-4 border-t">
             ESPEC-HSE-F09 Issue Date: 17-5-2021 Rev. No. 03
           </div>
@@ -638,7 +923,6 @@ export function PowerToolDailyChecklistDialog({
     );
   }
 
-  // Individual Item Inspection View
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-[800px] max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-2xl bg-white">
@@ -664,7 +948,6 @@ export function PowerToolDailyChecklistDialog({
           </div>
         </DialogHeader>
         <div className="space-y-6">
-          {/* Tool Info */}
           <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
@@ -677,7 +960,6 @@ export function PowerToolDailyChecklistDialog({
               </div>
             </div>
           </div>
-          {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-800">{isRTL ? "التقدم" : "Progress"}</span>
@@ -692,7 +974,6 @@ export function PowerToolDailyChecklistDialog({
               />
             </div>
           </div>
-          {/* Inspection Item */}
           {currentItem && (
             <div className="text-center space-y-4">
               <div className="relative">
@@ -717,7 +998,6 @@ export function PowerToolDailyChecklistDialog({
               </div>
             </div>
           )}
-          {/* Response Buttons */}
           <div className="space-y-4">
             <div className="flex justify-center gap-4">
               <Button
@@ -764,7 +1044,6 @@ export function PowerToolDailyChecklistDialog({
                 </>
               )}
             </div>
-            {/* Comment Box */}
             {(showCommentBox || responses[currentItem?.id || ""]?.comment) && (
               <div className="space-y-3 p-4 bg-gray-50 rounded-lg shadow-sm">
                 <div>
@@ -775,7 +1054,7 @@ export function PowerToolDailyChecklistDialog({
                     placeholder={isRTL ? "أضف ملاحظاتك هنا..." : "Add your notes here..."}
                     value={responses[currentItem?.id || ""]?.comment || ""}
                     onChange={(e) => handleComment(e.target.value, currentItem.id)}
-                    className="min-h-[80px] border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                    className="min-h-[80px] border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
                   />
                 </div>
                 {responses[currentItem?.id || ""]?.status === "failed" && (
@@ -787,7 +1066,7 @@ export function PowerToolDailyChecklistDialog({
                       placeholder={isRTL ? "حدد الإجراء المطلوب" : "Specify required action"}
                       value={responses[currentItem?.id || ""]?.action || ""}
                       onChange={(e) => handleAction(e.target.value, currentItem.id)}
-                      className="border-red-200 focus:border-red-300 focus:ring focus:ring-red-100"
+                      className="border-red-200 focus:border-red-300 focus:ring focus:ring-red-100 transition-all"
                     />
                   </div>
                 )}
@@ -800,7 +1079,6 @@ export function PowerToolDailyChecklistDialog({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          {/* Navigation Buttons */}
           <div className="flex justify-between pt-4 border-t">
             <Button variant="outline" onClick={handlePrevious} className="hover:bg-gray-100 transition-all">
               <ChevronLeft className="h-4 w-4 mr-2" />
@@ -828,7 +1106,6 @@ export function PowerToolDailyChecklistDialog({
               )}
             </div>
           </div>
-          {/* Quick Navigation */}
           <div className="flex justify-center">
             <div className="flex gap-1 overflow-x-auto py-2">
               {INSPECTION_ITEMS.map((item, index) => (
@@ -854,3 +1131,5 @@ export function PowerToolDailyChecklistDialog({
     </Dialog>
   );
 }
+
+export { INSPECTION_ITEMS };

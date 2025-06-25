@@ -1,14 +1,16 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ChevronLeft, ChevronRight, Car, CheckCircle2, FileText, Play, X, Check, AlertTriangle, Eye } from "lucide-react";
 import { Vehicle } from "@/types/vehicle";
 import { VehicleDailyInspection } from "@/types/vehicleInspection";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 
 // Define the inspection items with their respective images
 const INSPECTION_ITEMS = [
@@ -48,7 +50,7 @@ const INSPECTION_ITEMS = [
     id: "lights",
     image: "/images/headlights.png",
     title: "Lights",
-    description: "Head lights, Indicator lights, break lights are operational",
+    description: "Head lights, Indicator lights, brake lights are operational",
     titleAr: "الأضواء",
     descriptionAr: "المصابيح الأمامية، إشارات الانعطاف، أضواء الفرامل تعمل",
   },
@@ -111,19 +113,20 @@ export function VehicleDailyChecklistDialog({
   vehicle,
   open,
   onOpenChange,
-  onSubmit
+  onSubmit,
 }: VehicleDailyChecklistDialogProps) {
   const { currentLanguage } = useLanguage();
-  const isRTL = currentLanguage === 'ar';
+  const isRTL = currentLanguage === "ar";
+  const { toast } = useToast();
 
   // View state
   const [currentStep, setCurrentStep] = useState(-1); // -1: overview, -2: report, >=0: individual
   const [responses, setResponses] = useState<Record<string, InspectionResponse>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showNextInsteadOfNo, setShowNextInsteadOfNo] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'individual'>("list");
+  const [viewMode, setViewMode] = useState<"list" | "individual" | "lastReport">("list");
   const [nextInspectionDate, setNextInspectionDate] = useState("");
   // Header fields
   const [project, setProject] = useState("");
@@ -131,8 +134,20 @@ export function VehicleDailyChecklistDialog({
   const [issueDate, setIssueDate] = useState("");
   const [month, setMonth] = useState("");
   const [mileage, setMileage] = useState("");
+  // Last report state
+  const [lastReports, setLastReports] = useState<VehicleDailyInspection[]>([]);
+  const [selectedReportDate, setSelectedReportDate] = useState<string>("");
+  const [lastReportLoading, setLastReportLoading] = useState(false);
 
   const currentItem = currentStep >= 0 ? INSPECTION_ITEMS[currentStep] : null;
+
+  const getInspectionItemDetails = (id: string) => {
+    const item = INSPECTION_ITEMS.find((i) => i.id === id);
+    return {
+      description: item ? item.description : "",
+      isRequired: true,
+    };
+  };
 
   const getStatusIcon = (status?: "passed" | "failed") => {
     switch (status) {
@@ -158,7 +173,7 @@ export function VehicleDailyChecklistDialog({
     if (viewMode === "individual") {
       setCurrentStep(0);
     } else {
-      const firstUnchecked = INSPECTION_ITEMS.findIndex(item => !responses[item.id]?.status);
+      const firstUnchecked = INSPECTION_ITEMS.findIndex((item) => !responses[item.id]?.status);
       if (firstUnchecked >= 0) {
         setCurrentStep(firstUnchecked);
         setViewMode("individual");
@@ -166,13 +181,13 @@ export function VehicleDailyChecklistDialog({
     }
   };
 
-  const handleResponse = (status: 'passed' | 'failed', id: string) => {
+  const handleResponse = (status: "passed" | "failed", id: string) => {
     setResponses((prev) => ({
       ...prev,
       [id]: {
         status,
-        comment: prev[id]?.comment || '',
-        action: prev[id]?.action || '',
+        comment: prev[id]?.comment || "",
+        action: prev[id]?.action || "",
       },
     }));
     if (viewMode === "individual") {
@@ -235,26 +250,57 @@ export function VehicleDailyChecklistDialog({
         return;
       }
       if (!mileage || isNaN(Number(mileage))) {
-        setError(isRTL ? 'يرجى إدخال قراءة عداد المسافات' : 'Please enter the current mileage reading');
+        setError(isRTL ? "يرجى إدخال قراءة عداد المسافات" : "Please enter the current mileage reading");
         return;
       }
       const inspection: VehicleDailyInspection = {
         date: new Date().toISOString(),
-        driverId: 'current-user-id',
-        driverName: vehicle.assignedTo || 'Unknown Driver',
-        items: Object.entries(responses).map(([id, response]) => ({
-          id,
-          description: INSPECTION_ITEMS.find(item => item.id === id)?.description || '',
-          status: response.status,
-          comment: response.comment,
-          isRequired: true
-        })),
-        status: 'completed',
+        driverId: "current-user-id",
+        driverName: vehicle.assignedTo || "Unknown Driver",
+        items: Object.entries(responses).map(([id, response]) => {
+          const { description, isRequired } = getInspectionItemDetails(id);
+          return {
+            id,
+            description,
+            isRequired,
+            status: response.status || "not-checked",
+            comment: response.comment,
+            action: response.action,
+          };
+        }),
+        status: "completed",
         vehicleId: vehicle.id,
         mileage: Number(mileage),
-        notes: '',
+        nextInspectionDate,
+        notes: project,
+        plateNumber: vehicle.plateNumber || "",
+        manufacturer: company,
+        modelNumber: "",
       };
       await onSubmit(inspection);
+
+      // Store in localStorage
+      const existingReports = JSON.parse(localStorage.getItem(`vehicle_inspection_reports_${vehicle.id}`) || "[]");
+      localStorage.setItem(
+        `vehicle_inspection_reports_${vehicle.id}`,
+        JSON.stringify([inspection, ...existingReports])
+      );
+
+      // Update last reports state
+      setLastReports((prev) => [
+        inspection,
+        ...prev.filter((report) => report.date !== inspection.date),
+      ]);
+
+      // Show toast notification
+      toast({
+        title: isRTL ? "تم حفظ التقرير" : "Report Saved",
+        description: isRTL ? "تم حفظ تقرير الفحص بنجاح" : "The inspection report has been saved successfully",
+        variant: "default",
+        duration: 3000,
+      });
+
+      // Close the dialog
       onOpenChange(false);
       setCurrentStep(-1);
       setResponses({});
@@ -262,7 +308,7 @@ export function VehicleDailyChecklistDialog({
       setShowCommentBox(false);
       setViewMode("list");
     } catch (err) {
-      setError(isRTL ? 'حدث خطأ أثناء حفظ قائمة التحقق' : 'An error occurred while saving the checklist');
+      setError(isRTL ? "حدث خطأ أثناء حفظ الفحص" : "An error occurred while saving the inspection");
     } finally {
       setIsSubmitting(false);
     }
@@ -282,6 +328,71 @@ export function VehicleDailyChecklistDialog({
     setViewMode("list");
   };
 
+  // Fetch reports from localStorage
+  async function fetchLastInspectionReports(vehicleId: string): Promise<VehicleDailyInspection[]> {
+    const storedReports = JSON.parse(localStorage.getItem(`vehicle_inspection_reports_${vehicleId}`) || "[]");
+    if (storedReports.length > 0) {
+      return storedReports;
+    }
+    // Fallback mock data if no reports in localStorage
+    return [
+      {
+        date: "2025-06-20",
+        status: "completed",
+        items: INSPECTION_ITEMS.map((item) => ({
+          id: item.id,
+          description: item.description,
+          isRequired: true,
+          status: Math.random() > 0.3 ? "passed" : "failed",
+          comment: Math.random() > 0.7 ? "Sample comment" : "",
+          action: Math.random() > 0.7 ? "Sample action" : "",
+        })),
+        vehicleId,
+        driverId: "user-1",
+        driverName: "John Doe",
+        mileage: 15000,
+        nextInspectionDate: "2025-07-20",
+        notes: "Sample project",
+        plateNumber: vehicle.plateNumber || "ABC123",
+        manufacturer: "Sample Co",
+        modelNumber: "V123",
+      },
+      {
+        date: "2025-06-15",
+        status: "completed",
+        items: INSPECTION_ITEMS.map((item) => ({
+          id: item.id,
+          description: item.description,
+          isRequired: true,
+          status: Math.random() > 0.5 ? "passed" : "failed",
+          comment: Math.random() > 0.8 ? "Older comment" : "",
+          action: Math.random() > 0.8 ? "Older action" : "",
+        })),
+        vehicleId,
+        driverId: "user-2",
+        driverName: "Jane Doe",
+        mileage: 14500,
+        nextInspectionDate: "2025-07-15",
+        notes: "Another project",
+        plateNumber: vehicle.plateNumber || "XYZ789",
+        manufacturer: "Sample Co",
+        modelNumber: "V456",
+      },
+    ];
+  }
+
+  // Fetch reports on component mount or when vehicle changes
+  useEffect(() => {
+    if (viewMode === "lastReport" && vehicle.id) {
+      setLastReportLoading(true);
+      fetchLastInspectionReports(vehicle.id).then((reports) => {
+        setLastReports(reports);
+        setSelectedReportDate(reports[0]?.date || "");
+        setLastReportLoading(false);
+      });
+    }
+  }, [viewMode, vehicle.id]);
+
   // Completion Report View
   if (currentStep === -2) {
     const stats = getCompletionStats();
@@ -294,6 +405,18 @@ export function VehicleDailyChecklistDialog({
               {isRTL ? "تقرير إكمال الفحص" : "Inspection Completion Report"}
             </DialogTitle>
           </DialogHeader>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCurrentStep(-1);
+              setViewMode("list");
+            }}
+            className="mb-4 hover:bg-gray-100 transition-all w-fit"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            {isRTL ? "العودة للقائمة" : "Back to List"}
+          </Button>
 
           {/* Checklist Header Fields */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
@@ -331,6 +454,7 @@ export function VehicleDailyChecklistDialog({
               <div><span className="font-medium">{isRTL ? "المركبة:" : "Vehicle:"}</span> {vehicle.name}</div>
               <div><span className="font-medium">{isRTL ? "رقم اللوحة:" : "Plate No:"}</span> {vehicle.plateNumber}</div>
               <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {project}</div>
+              <div><span className="font-medium">{isRTL ? "عداد المسافات:" : "Mileage:"}</span> {mileage}</div>
             </div>
           </div>
 
@@ -345,7 +469,7 @@ export function VehicleDailyChecklistDialog({
                   {isRTL ? "العناصر الفاشلة" : "Failed Items"}
                 </h4>
                 <div className="space-y-3">
-                  {INSPECTION_ITEMS.filter(item => responses[item.id]?.status === "failed").map(item => (
+                  {INSPECTION_ITEMS.filter((item) => responses[item.id]?.status === "failed").map((item) => (
                     <div key={item.id} className="flex items-start gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
                       <img src={item.image} alt="" className="w-10 h-10 object-cover rounded" />
                       <div className="flex-1">
@@ -373,7 +497,7 @@ export function VehicleDailyChecklistDialog({
                 {isRTL ? "العناصر الناجحة" : "Passed Items"}
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {INSPECTION_ITEMS.filter(item => responses[item.id]?.status === "passed").map(item => (
+                {INSPECTION_ITEMS.filter((item) => responses[item.id]?.status === "passed").map((item) => (
                   <div key={item.id} className="flex items-center gap-2 p-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
                     <img src={item.image} alt="" className="w-8 h-8 object-cover rounded" />
                     <span className="text-sm">{isRTL ? item.titleAr : item.title}</span>
@@ -404,21 +528,202 @@ export function VehicleDailyChecklistDialog({
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-between pt-4 border-t">
-            <Button variant="outline" onClick={() => setCurrentStep(-1)} className="hover:bg-gray-100 transition-all">
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              {isRTL ? "العودة للقائمة" : "Back to List"}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
+              <FileText className="h-4 w-4 mr-2" />
+              {isRTL ? "طباعة التقرير" : "Print Report"}
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
-                <FileText className="h-4 w-4 mr-2" />
-                {isRTL ? "طباعة التقرير" : "Print Report"}
-              </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting || !nextInspectionDate} className="bg-blue-600 hover:bg-blue-700 transition-all">
-                {isSubmitting ? (isRTL ? "جاري الحفظ..." : "Saving...") : (isRTL ? "حفظ التقرير" : "Save Report")}
-              </Button>
-            </div>
+            <Button onClick={handleSubmit} disabled={isSubmitting || !nextInspectionDate || !mileage} className="bg-blue-600 hover:bg-blue-700 transition-all">
+              {isSubmitting ? (isRTL ? "جاري الحفظ..." : "Saving...") : (isRTL ? "حفظ التقرير" : "Save Report")}
+            </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Last Report View
+  if (viewMode === "lastReport") {
+    const selectedReport = lastReports.find((report) => report.date === selectedReportDate);
+    const stats = selectedReport && selectedReport.items ? {
+      total: INSPECTION_ITEMS.length,
+      completed: selectedReport.items.length,
+      passed: selectedReport.items.filter((i) => i.status === "passed").length,
+      failed: selectedReport.items.filter((i) => i.status === "failed").length,
+      passRate: selectedReport.items.length > 0 ? Math.round((selectedReport.items.filter((i) => i.status === "passed").length / selectedReport.items.length) * 100) : 0,
+    } : { total: 0, completed: 0, passed: 0, failed: 0, passRate: 0 };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[95vw] max-w-[1200px] max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-2xl bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-gray-800">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              {isRTL ? "آخر تقرير فحص" : "Last Inspection Report"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <Button
+            variant="outline"
+            onClick={() => setViewMode("list")}
+            className="mb-4 hover:bg-gray-100 transition-all w-fit"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            {isRTL ? "العودة للقائمة" : "Back to List"}
+          </Button>
+
+          {lastReportLoading ? (
+            <div className="py-8 text-center text-gray-500">{isRTL ? "جاري التحميل..." : "Loading..."}</div>
+          ) : lastReports.length > 0 ? (
+            <>
+              {/* Report Date Selector */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "اختيار تاريخ التقرير" : "Select Report Date"}</h3>
+                <Select
+                  value={selectedReportDate}
+                  onValueChange={(value) => setSelectedReportDate(value)}
+                >
+                  <SelectTrigger className="w-full max-w-[300px] border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    <SelectValue placeholder={isRTL ? "اختر تاريخ التقرير" : "Select report date"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lastReports.map((report) => (
+                      <SelectItem key={report.date} value={report.date}>
+                        {new Date(report.date).toLocaleDateString(isRTL ? "ar-EG" : "en-US")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedReport && (
+                <>
+                  {/* Checklist Header Fields */}
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                    <h3 className="font-semibold text-lg mb-3 text-gray-800">VEHICLE DAILY INSPECTION CHECKLIST</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div><span className="font-medium">VEHICLE:</span> {vehicle.name}</div>
+                      <div><span className="font-medium">PLATE NO:</span> {selectedReport.plateNumber}</div>
+                      <div><span className="font-medium">COMPANY:</span> {selectedReport.manufacturer}</div>
+                      <div><span className="font-medium">MONTH:</span> {new Date(selectedReport.date).toLocaleString("default", { month: "long" })}</div>
+                      <div><span className="font-medium">ISSUE DATE:</span> {selectedReport.date.split("T")[0]}</div>
+                      <div><span className="font-medium">PROJECT:</span> {selectedReport.notes}</div>
+                      <div><span className="font-medium">MILEAGE:</span> {selectedReport.mileage}</div>
+                    </div>
+                  </div>
+
+                  {/* Overall Statistics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    {[
+                      { value: stats.total, label: isRTL ? "إجمالي العناصر" : "Total Items", color: "blue" },
+                      { value: stats.passed, label: isRTL ? "نجح" : "Passed", color: "green" },
+                      { value: stats.failed, label: isRTL ? "فشل" : "Failed", color: "red" },
+                      { value: `${stats.passRate}%`, label: isRTL ? "معدل النجاح" : "Pass Rate", color: "purple" },
+                    ].map((stat, index) => (
+                      <div key={index} className={`bg-${stat.color}-50 p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-shadow`}>
+                        <div className={`text-2xl font-bold text-${stat.color}-600`}>{stat.value}</div>
+                        <div className={`text-sm text-${stat.color}-800`}>{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Vehicle Information */}
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                    <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "معلومات المركبة" : "Vehicle Information"}</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div><span className="font-medium">{isRTL ? "المركبة:" : "Vehicle:"}</span> {vehicle.name}</div>
+                      <div><span className="font-medium">{isRTL ? "رقم اللوحة:" : "Plate No:"}</span> {selectedReport.plateNumber}</div>
+                      <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {selectedReport.notes}</div>
+                      <div><span className="font-medium">{isRTL ? "عداد المسافات:" : "Mileage:"}</span> {selectedReport.mileage}</div>
+                    </div>
+                  </div>
+
+                  {/* Inspection Items Grid */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg text-gray-800">{isRTL ? "النتائج التفصيلية" : "Detailed Results"}</h3>
+                    {/* Failed Items */}
+                    {stats.failed > 0 && (
+                      <div className="bg-red-50 p-4 rounded-lg shadow-sm">
+                        <h4 className="font-medium text-red-800 mb-3 flex items-center gap-2">
+                          <X className="h-5 w-5" />
+                          {isRTL ? "العناصر الفاشلة" : "Failed Items"}
+                        </h4>
+                        <div className="space-y-3">
+                          {INSPECTION_ITEMS.filter((item) => {
+                            const reportItem = selectedReport.items.find((i) => i.id === item.id);
+                            return reportItem?.status === "failed";
+                          }).map((item) => (
+                            <div key={item.id} className="flex items-start gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                              <img src={item.image} alt="" className="w-10 h-10 object-cover rounded" />
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{isRTL ? item.titleAr : item.title}</div>
+                                {selectedReport.items.find((i) => i.id === item.id)?.comment && (
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    <strong>{isRTL ? "ملاحظة:" : "Note:"}</strong> {selectedReport.items.find((i) => i.id === item.id)?.comment}
+                                  </div>
+                                )}
+                                {selectedReport.items.find((i) => i.id === item.id)?.action && (
+                                  <div className="text-sm text-red-600 mt-1">
+                                    <strong>{isRTL ? "الإجراء المطلوب:" : "Action Required:"}</strong> {selectedReport.items.find((i) => i.id === item.id)?.action}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Passed Items */}
+                    <div className="bg-green-50 p-4 rounded-lg shadow-sm">
+                      <h4 className="font-medium text-green-800 mb-3 flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5" />
+                        {isRTL ? "العناصر الناجحة" : "Passed Items"}
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {INSPECTION_ITEMS.filter((item) => {
+                          const reportItem = selectedReport.items.find((i) => i.id === item.id);
+                          return reportItem?.status === "passed";
+                        }).map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 p-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            <img src={item.image} alt="" className="w-8 h-8 object-cover rounded" />
+                            <span className="text-sm">{isRTL ? item.titleAr : item.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Next Inspection Date */}
+                  <div className="bg-blue-50 p-4 rounded-lg shadow-sm mt-6">
+                    <label className="block text-sm font-medium mb-2 text-gray-800">
+                      {isRTL ? "تاريخ الفحص القادم" : "Next Inspection Date"}
+                    </label>
+                    <Input
+                      type="date"
+                      value={selectedReport.nextInspectionDate || ""}
+                      readOnly
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all bg-gray-100 cursor-not-allowed"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Reference Information */}
+              <div className="text-xs text-gray-500 text-center pt-4 border-t mt-6">
+                ESPEC-HSE-F09 Issue Date: 17-5-2021 Rev. No. 03
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end pt-4 border-t mt-6">
+                <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
+                  <FileText className="h-4 w-4 mr-2" />
+                  {isRTL ? "طباعة التقرير" : "Print Report"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="py-8 text-center text-gray-500">{isRTL ? "لا يوجد تقارير سابقة" : "No previous reports found."}</div>
+          )}
         </DialogContent>
       </Dialog>
     );
@@ -436,7 +741,15 @@ export function VehicleDailyChecklistDialog({
             <div className="flex gap-2">
               <Button
                 variant="secondary"
-                onClick={() => alert("Last Inspection Report clicked")}
+                onClick={() => {
+                  setLastReportLoading(true);
+                  fetchLastInspectionReports(vehicle.id).then((reports) => {
+                    setLastReports(reports);
+                    setSelectedReportDate(reports[0]?.date || "");
+                    setLastReportLoading(false);
+                    setViewMode("lastReport");
+                  });
+                }}
                 className="hover:bg-gray-100 transition-all"
               >
                 <FileText className="h-4 w-4 mr-2" />
@@ -470,23 +783,51 @@ export function VehicleDailyChecklistDialog({
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">COMPANY:</label>
-                <Input value={company} onChange={e => setCompany(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Enter company" />
+                <Input
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Enter company"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">MONTH:</label>
-                <Input type="month" value={month} onChange={e => setMonth(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Select month" />
+                <Input
+                  type="month"
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Select month"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">ISSUE DATE:</label>
-                <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Select issue date" />
+                <Input
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Select issue date"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">PROJECT:</label>
-                <Input value={project} onChange={e => setProject(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Enter project name" />
+                <Input
+                  value={project}
+                  onChange={(e) => setProject(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Enter project name"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">MILEAGE:</label>
-                <Input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all" placeholder="Enter mileage" />
+                <Input
+                  type="number"
+                  value={mileage}
+                  onChange={(e) => setMileage(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder="Enter mileage"
+                />
               </div>
             </div>
           </div>
@@ -513,7 +854,6 @@ export function VehicleDailyChecklistDialog({
                     <p className="text-xs text-gray-500 mb-3">
                       {isRTL ? item.descriptionAr : item.description}
                     </p>
-                    {/* Quick Action Buttons */}
                     <div className="flex gap-2 mb-2">
                       <Button
                         size="sm"
@@ -540,7 +880,6 @@ export function VehicleDailyChecklistDialog({
                         {isRTL ? "لا" : "No"}
                       </Button>
                     </div>
-                    {/* Comments and Actions */}
                     {(responses[item.id]?.status === "failed" || showCommentBox) && (
                       <div className="space-y-2">
                         <Input
@@ -582,8 +921,8 @@ export function VehicleDailyChecklistDialog({
               />
             </div>
             <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>{isRTL ? "نجح" : "Passed"}: {Object.values(responses).filter(r => r.status === "passed").length}</span>
-              <span>{isRTL ? "فشل" : "Failed"}: {Object.values(responses).filter(r => r.status === "failed").length}</span>
+              <span>{isRTL ? "نجح" : "Passed"}: {Object.values(responses).filter((r) => r.status === "passed").length}</span>
+              <span>{isRTL ? "فشل" : "Failed"}: {Object.values(responses).filter((r) => r.status === "failed").length}</span>
             </div>
           </div>
 
@@ -842,3 +1181,5 @@ export function VehicleDailyChecklistDialog({
     </Dialog>
   );
 }
+
+export { INSPECTION_ITEMS };

@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/hooks/use-language";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, FileText, Play, X, Check, AlertTriangle, Eye } from "lucide-react";
 import type { LiftingAccessory } from "@/types/lifting-tools";
 import type { MonthlyInspection } from "@/types/inspection";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 
-// Using the same inspection items as MonthlyInspectionDialog
 const LIFTING_ACCESSORY_INSPECTION_ITEMS = [
   {
     id: "driving-license",
@@ -165,33 +166,43 @@ interface Props {
   onSubmit: (inspection: MonthlyInspection) => Promise<void>;
 }
 
+interface InspectionResponse {
+  status?: "passed" | "failed";
+  comment: string;
+  action?: string;
+}
+
 export function LiftingAccessoryMonthlyInspectionDialog({
   accessory,
   open,
   onOpenChange,
-  onSubmit
+  onSubmit,
 }: Props) {
+  if (!accessory) {
+    return null; // or a fallback UI
+  }
+
   const { currentLanguage } = useLanguage();
-  const isRTL = currentLanguage === 'ar';
-  
+  const isRTL = currentLanguage === "ar";
+  const { toast } = useToast();
+
   const [currentStep, setCurrentStep] = useState(-1);
-  const [responses, setResponses] = useState<Record<string, {
-    status?: 'passed' | 'failed';
-    comment: string;
-    action?: string;
-  }>>({});
+  const [responses, setResponses] = useState<Record<string, InspectionResponse>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showNextInsteadOfNo, setShowNextInsteadOfNo] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
-  const [nextInspectionDate, setNextInspectionDate] = useState('');
-  const [lastInspectionDate, setLastInspectionDate] = useState('');
+  const [nextInspectionDate, setNextInspectionDate] = useState("");
+  const [lastInspectionDate, setLastInspectionDate] = useState("");
   const [project, setProject] = useState("");
   const [subcontractor, setSubcontractor] = useState("");
   const [chassisNo, setChassisNo] = useState("");
   const [driverName, setDriverName] = useState("");
   const [inspectorName, setInspectorName] = useState("");
-  const [viewMode, setViewMode] = useState<'list' | 'individual'>("list");
+  const [viewMode, setViewMode] = useState<"list" | "individual" | "lastReport">("list");
+  const [lastReports, setLastReports] = useState<MonthlyInspection[]>([]);
+  const [selectedReportDate, setSelectedReportDate] = useState<string>("");
+  const [lastReportLoading, setLastReportLoading] = useState(false);
 
   const currentItem = currentStep >= 0 ? LIFTING_ACCESSORY_INSPECTION_ITEMS[currentStep] : null;
 
@@ -298,20 +309,44 @@ export function LiftingAccessoryMonthlyInspectionDialog({
             isRequired,
             status: response.status || "not-checked",
             comment: response.comment,
+            action: response.action,
           };
         }),
         status: "completed",
         equipmentId: accessory.accessoryId,
-        toolName: accessory.accessoryName,
-        serialNumber: accessory.accessoryId,
-        manufacturer: accessory.manufacturer,
-        modelNumber: accessory.modelNumber,
+        toolName: accessory.accessoryName || "",
+        serialNumber: chassisNo || accessory.accessoryId || "",
+        manufacturer: subcontractor || accessory.manufacturer || "",
+        modelNumber: accessory.modelNumber || "",
         nextInspectionDate,
-        notes: "",
+        notes: project,
         powerToolId: "",
       };
 
       await onSubmit(inspection);
+
+      // Store in localStorage
+      const existingReports = JSON.parse(localStorage.getItem(`lifting_accessory_inspection_reports_${accessory.accessoryId}`) || '[]');
+      localStorage.setItem(
+        `lifting_accessory_inspection_reports_${accessory.accessoryId}`,
+        JSON.stringify([inspection, ...existingReports])
+      );
+
+      // Update last reports state
+      setLastReports((prev) => [
+        inspection,
+        ...prev.filter((report) => report.date !== inspection.date),
+      ]);
+
+      // Show toast notification
+      toast({
+        title: isRTL ? "تم حفظ التقرير" : "Report Saved",
+        description: isRTL ? "تم حفظ تقرير الفحص بنجاح" : "The inspection report has been saved successfully",
+        variant: "default",
+        duration: 3000,
+      });
+
+      // Close the dialog
       onOpenChange(false);
       setCurrentStep(-1);
       setResponses({});
@@ -336,6 +371,8 @@ export function LiftingAccessoryMonthlyInspectionDialog({
     setChassisNo("");
     setDriverName("");
     setInspectorName("");
+    setNextInspectionDate("");
+    setLastInspectionDate("");
     setViewMode("list");
   };
 
@@ -359,6 +396,73 @@ export function LiftingAccessoryMonthlyInspectionDialog({
     return { total, completed, passed, failed, passRate };
   };
 
+  // Fetch reports from localStorage
+  async function fetchLastInspectionReports(accessoryId: string): Promise<MonthlyInspection[]> {
+    const storedReports = JSON.parse(localStorage.getItem(`lifting_accessory_inspection_reports_${accessoryId}`) || '[]');
+    if (storedReports.length > 0) {
+      return storedReports;
+    }
+    // Fallback mock data if no reports in localStorage
+    return [
+      {
+        date: "2025-05-20",
+        status: "completed",
+        items: LIFTING_ACCESSORY_INSPECTION_ITEMS.map(item => ({
+          id: item.id,
+          description: item.description,
+          isRequired: true,
+          status: Math.random() > 0.3 ? "passed" : "failed",
+          comment: Math.random() > 0.7 ? "Sample comment" : "",
+          action: Math.random() > 0.7 ? "Sample action" : "",
+        })),
+        equipmentId: accessoryId,
+        technicianId: "user-1",
+        technicianName: "John Smith",
+        toolName: "Lifting Sling",
+        serialNumber: "SN123456",
+        manufacturer: "Sample Co",
+        modelNumber: "X123",
+        nextInspectionDate: "2025-06-20",
+        notes: "Sample project",
+        powerToolId: "",
+      },
+      {
+        date: "2025-04-15",
+        status: "completed",
+        items: LIFTING_ACCESSORY_INSPECTION_ITEMS.map(item => ({
+          id: item.id,
+          description: item.description,
+          isRequired: true,
+          status: Math.random() > 0.5 ? "passed" : "failed",
+          comment: Math.random() > 0.8 ? "Older comment" : "",
+          action: Math.random() > 0.8 ? "Older action" : "",
+        })),
+        equipmentId: accessoryId,
+        technicianId: "user-2",
+        technicianName: "Jane Smith",
+        toolName: "Lifting Hook",
+        serialNumber: "SN654321",
+        manufacturer: "Sample Co",
+        modelNumber: "B456",
+        nextInspectionDate: "2025-05-15",
+        notes: "Another project",
+        powerToolId: "",
+      },
+    ];
+  }
+
+  // Fetch reports on component mount or when accessory changes
+  useEffect(() => {
+    if (viewMode === "lastReport" && accessory?.accessoryId) {
+      setLastReportLoading(true);
+      fetchLastInspectionReports(accessory.accessoryId).then((reports) => {
+        setLastReports(reports);
+        setSelectedReportDate(reports[0]?.date || "");
+        setLastReportLoading(false);
+      });
+    }
+  }, [viewMode, accessory?.accessoryId]);
+
   if (!accessory) return null;
 
   // Completion Report View
@@ -370,9 +474,35 @@ export function LiftingAccessoryMonthlyInspectionDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-gray-800">
               <CheckCircle2 className="h-6 w-6 text-green-600" />
-              {isRTL ? "تقرير إكمال الفحص" : "Inspection Completion Report"}
+              {isRTL ? "تقرير إكمال الفحص الشهري" : "Monthly Inspection Completion Report"}
             </DialogTitle>
           </DialogHeader>
+
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setCurrentStep(-1);
+              setViewMode("list");
+            }} 
+            className="mb-4 hover:bg-gray-100 transition-all w-fit"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            {isRTL ? "العودة للقائمة" : "Back to List"}
+          </Button>
+
+          {/* Checklist Header Fields */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+            <h3 className="font-semibold text-lg mb-3 text-gray-800">MONTHLY LIFTING ACCESSORY INSPECTION CHECKLIST</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {project}</div>
+              <div><span className="font-medium">{isRTL ? "تاريخ الفحص الأخير:" : "Last Inspection Date:"}</span> {lastInspectionDate}</div>
+              <div><span className="font-medium">{isRTL ? "المقاول الفرعي:" : "Subcontractor:"}</span> {subcontractor}</div>
+              <div><span className="font-medium">{isRTL ? "رقم الشاسيه:" : "Chassis No:"}</span> {chassisNo}</div>
+              <div><span className="font-medium">{isRTL ? "اسم السائق:" : "Driver Name:"}</span> {driverName}</div>
+              <div><span className="font-medium">{isRTL ? "اسم المفتش:" : "Inspector Name:"}</span> {inspectorName}</div>
+            </div>
+          </div>
+
           {/* Overall Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
@@ -387,18 +517,17 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               </div>
             ))}
           </div>
+
           {/* Accessory Information */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
             <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "معلومات الملحق" : "Accessory Information"}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <div><span className="font-medium">{isRTL ? "اسم الملحق:" : "Accessory Name:"}</span> {accessory.accessoryName}</div>
-              <div><span className="font-medium">{isRTL ? "رقم الملحق:" : "Accessory ID:"}</span> {accessory.accessoryId}</div>
+              <div><span className="font-medium">{isRTL ? "اسم الملحق:" : "Accessory Name:"}</span> {accessory.accessoryName || ""}</div>
+              <div><span className="font-medium">{isRTL ? "الرقم التسلسلي:" : "Serial Number:"}</span> {chassisNo || accessory.accessoryId || ""}</div>
               <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {project}</div>
-              <div><span className="font-medium">{isRTL ? "المقاول الفرعي:" : "Subcontractor:"}</span> {subcontractor}</div>
-              <div><span className="font-medium">{isRTL ? "رقم الشاسيه:" : "Chassis No:"}</span> {chassisNo}</div>
-              <div><span className="font-medium">{isRTL ? "اسم السائق:" : "Driver Name:"}</span> {driverName}</div>
             </div>
           </div>
+
           {/* Detailed Results */}
           <div className="space-y-4">
             <h3 className="font-semibold text-lg text-gray-800">{isRTL ? "النتائج التفصيلية" : "Detailed Results"}</h3>
@@ -447,6 +576,7 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               </div>
             </div>
           </div>
+
           {/* Next Inspection Date */}
           <div className="bg-blue-50 p-4 rounded-lg shadow-sm">
             <label className="block text-sm font-medium mb-2 text-gray-800">
@@ -459,28 +589,209 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
             />
           </div>
+
           {error && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
           {/* Action Buttons */}
-          <div className="flex justify-between pt-4 border-t">
-            <Button variant="outline" onClick={() => setCurrentStep(-1)} className="hover:bg-gray-100 transition-all">
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              {isRTL ? "العودة للقائمة" : "Back to List"}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
+              <FileText className="h-4 w-4 mr-2" />
+              {isRTL ? "طباعة التقرير" : "Print Report"}
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
-                <FileText className="h-4 w-4 mr-2" />
-                {isRTL ? "طباعة التقرير" : "Print Report"}
-              </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting || !nextInspectionDate} className="bg-blue-600 hover:bg-blue-700 transition-all">
-                {isSubmitting ? (isRTL ? "جاري الحفظ..." : "Saving...") : (isRTL ? "حفظ التقرير" : "Save Report")}
-              </Button>
-            </div>
+            <Button onClick={handleSubmit} disabled={isSubmitting || !nextInspectionDate} className="bg-blue-600 hover:bg-blue-700 transition-all">
+              {isSubmitting ? (isRTL ? "جاري الحفظ..." : "Saving...") : (isRTL ? "حفظ التقرير" : "Save Report")}
+            </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Last Report View
+  if (viewMode === "lastReport") {
+    const selectedReport = lastReports.find(report => report.date === selectedReportDate);
+    const stats = selectedReport && selectedReport.items ? {
+      total: LIFTING_ACCESSORY_INSPECTION_ITEMS.length,
+      completed: selectedReport.items.length,
+      passed: selectedReport.items.filter((i) => i.status === "passed").length,
+      failed: selectedReport.items.filter((i) => i.status === "failed").length,
+      passRate: selectedReport.items.length > 0 ? Math.round((selectedReport.items.filter((i) => i.status === "passed").length / selectedReport.items.length) * 100) : 0,
+    } : { total: 0, completed: 0, passed: 0, failed: 0, passRate: 0 };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[95vw] max-w-[1200px] max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-2xl bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-gray-800">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              {isRTL ? "آخر تقرير فحص شهري" : "Last Monthly Inspection Report"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <Button 
+            variant="outline" 
+            onClick={() => setViewMode("list")} 
+            className="mb-4 hover:bg-gray-100 transition-all w-fit"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            {isRTL ? "العودة للقائمة" : "Back to List"}
+          </Button>
+
+          {lastReportLoading ? (
+            <div className="py-8 text-center text-gray-500">{isRTL ? "جاري التحميل..." : "Loading..."}</div>
+          ) : lastReports.length > 0 ? (
+            <>
+              {/* Report Date Selector */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "اختيار تاريخ التقرير" : "Select Report Date"}</h3>
+                <Select
+                  value={selectedReportDate}
+                  onValueChange={(value) => setSelectedReportDate(value)}
+                >
+                  <SelectTrigger className="w-full max-w-[300px] border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    <SelectValue placeholder={isRTL ? "اختر تاريخ التقرير" : "Select report date"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lastReports.map((report) => (
+                      <SelectItem key={report.date} value={report.date}>
+                        {new Date(report.date).toLocaleDateString(isRTL ? "ar-EG" : "en-US")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedReport && (
+                <>
+                  {/* Checklist Header Fields */}
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                    <h3 className="font-semibold text-lg mb-3 text-gray-800">MONTHLY LIFTING ACCESSORY INSPECTION CHECKLIST</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {selectedReport.notes}</div>
+                      <div><span className="font-medium">{isRTL ? "تاريخ الفحص:" : "Inspection Date:"}</span> {selectedReport.date.split('T')[0]}</div>
+                      <div><span className="font-medium">{isRTL ? "المقاول الفرعي:" : "Subcontractor:"}</span> {selectedReport.manufacturer}</div>
+                      <div><span className="font-medium">{isRTL ? "رقم الشاسيه:" : "Chassis No:"}</span> {selectedReport.serialNumber}</div>
+                      <div><span className="font-medium">{isRTL ? "اسم السائق:" : "Driver Name:"}</span> {selectedReport.technicianName}</div>
+                      <div><span className="font-medium">{isRTL ? "اسم المفتش:" : "Inspector Name:"}</span> {selectedReport.technicianName}</div>
+                    </div>
+                  </div>
+
+                  {/* Overall Statistics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    {[
+                      { value: stats.total, label: isRTL ? "إجمالي العناصر" : "Total Items", color: "blue" },
+                      { value: stats.passed, label: isRTL ? "نجح" : "Passed", color: "green" },
+                      { value: stats.failed, label: isRTL ? "فشل" : "Failed", color: "red" },
+                      { value: `${stats.passRate}%`, label: isRTL ? "معدل النجاح" : "Pass Rate", color: "purple" },
+                    ].map((stat, index) => (
+                      <div key={index} className={`bg-${stat.color}-50 p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-shadow`}>
+                        <div className={`text-2xl font-bold text-${stat.color}-600`}>{stat.value}</div>
+                        <div className={`text-sm text-${stat.color}-800`}>{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Accessory Information */}
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                    <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "معلومات الملحق" : "Accessory Information"}</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div><span className="font-medium">{isRTL ? "اسم الملحق:" : "Accessory Name:"}</span> {selectedReport.toolName || selectedReport.equipmentId}</div>
+                      <div><span className="font-medium">{isRTL ? "الرقم التسلسلي:" : "Serial Number:"}</span> {selectedReport.serialNumber}</div>
+                      <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {selectedReport.notes}</div>
+                    </div>
+                  </div>
+
+                  {/* Inspection Items Grid */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg text-gray-800">{isRTL ? "النتائج التفصيلية" : "Detailed Results"}</h3>
+                    {/* Failed Items */}
+                    {stats.failed > 0 && (
+                      <div className="bg-red-50 p-4 rounded-lg shadow-sm">
+                        <h4 className="font-medium text-red-800 mb-3 flex items-center gap-2">
+                          <X className="h-5 w-5" />
+                          {isRTL ? "العناصر الفاشلة" : "Failed Items"}
+                        </h4>
+                        <div className="space-y-3">
+                          {LIFTING_ACCESSORY_INSPECTION_ITEMS.filter(item => {
+                            const reportItem = selectedReport.items.find(i => i.id === item.id);
+                            return reportItem?.status === "failed";
+                          }).map(item => (
+                            <div key={item.id} className="flex items-start gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                              <img src={item.image} alt="" className="w-10 h-10 object-cover rounded" />
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{isRTL ? item.titleAr : item.title}</div>
+                                {selectedReport.items.find(i => i.id === item.id)?.comment && (
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    <strong>{isRTL ? "ملاحظة:" : "Note:"}</strong> {selectedReport.items.find(i => i.id === item.id)?.comment}
+                                  </div>
+                                )}
+                                {selectedReport.items.find(i => i.id === item.id)?.action && (
+                                  <div className="text-sm text-red-600 mt-1">
+                                    <strong>{isRTL ? "الإجراء المطلوب:" : "Action Required:"}</strong> {selectedReport.items.find(i => i.id === item.id)?.action}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Passed Items */}
+                    <div className="bg-green-50 p-4 rounded-lg shadow-sm">
+                      <h4 className="font-medium text-green-800 mb-3 flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5" />
+                        {isRTL ? "العناصر الناجحة" : "Passed Items"}
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {LIFTING_ACCESSORY_INSPECTION_ITEMS.filter(item => {
+                          const reportItem = selectedReport.items.find(i => i.id === item.id);
+                          return reportItem?.status === "passed";
+                        }).map(item => (
+                          <div key={item.id} className="flex items-center gap-2 p-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            <img src={item.image} alt="" className="w-8 h-8 object-cover rounded" />
+                            <span className="text-sm">{isRTL ? item.titleAr : item.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Next Inspection Date */}
+                  <div className="bg-blue-50 p-4 rounded-lg shadow-sm mt-6">
+                    <label className="block text-sm font-medium mb-2 text-gray-800">
+                      {isRTL ? "تاريخ الفحص القادم" : "Next Inspection Date"}
+                    </label>
+                    <Input
+                      type="date"
+                      value={selectedReport.nextInspectionDate || ""}
+                      readOnly
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all bg-gray-100 cursor-not-allowed"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Reference Information */}
+              <div className="text-xs text-gray-500 text-center pt-4 border-t mt-6">
+                ESPEC-HSE-F09 Issue Date: 17-5-2021 Rev. No. 03
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end pt-4 border-t mt-6">
+                <Button variant="outline" onClick={() => window.print()} className="hover:bg-gray-100 transition-all">
+                  <FileText className="h-4 w-4 mr-2" />
+                  {isRTL ? "طباعة التقرير" : "Print Report"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="py-8 text-center text-gray-500">{isRTL ? "لا يوجد تقارير سابقة" : "No previous reports found."}</div>
+          )}
         </DialogContent>
       </Dialog>
     );
@@ -493,12 +804,20 @@ export function LiftingAccessoryMonthlyInspectionDialog({
         <DialogContent className="w-[95vw] max-w-[1400px] max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-2xl bg-white">
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
             <DialogTitle className="text-2xl font-bold text-gray-800">
-              {isRTL ? "الفحص الشهري لملحقات الرفع" : "Lifting Accessory Monthly Inspection"}
+              {isRTL ? "الفحص الشهري لملحقات الرفع" : "Lifting Accessory Monthly Inspection Checklist"}
             </DialogTitle>
             <div className="flex gap-2">
               <Button
                 variant="secondary"
-                onClick={() => alert("Last Inspection Report clicked")}
+                onClick={() => {
+                  setLastReportLoading(true);
+                  fetchLastInspectionReports(accessory.accessoryId).then((reports) => {
+                    setLastReports(reports);
+                    setSelectedReportDate(reports[0]?.date || "");
+                    setLastReportLoading(false);
+                    setViewMode("lastReport");
+                  });
+                }}
                 className="hover:bg-gray-100 transition-all"
               >
                 <FileText className="h-4 w-4 mr-2" />
@@ -518,32 +837,71 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               </Button>
             </div>
           </DialogHeader>
+
           {/* Accessory and Project Info */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
             <h3 className="text-lg font-semibold mb-3 text-gray-800">
-              Lifting Accessory Inspection Checklist
+              {isRTL ? "قائمة فحص ملحقات الرفع" : "Lifting Accessory Inspection Checklist"}
             </h3>
-            <p className="text-sm mb-3 text-gray-500">{accessory.accessoryName}</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Project", value: project, onChange: setProject, placeholder: "Enter project name" },
-                { label: "Date", value: lastInspectionDate, onChange: setLastInspectionDate, type: "date" },
-                { label: "Subcontractor", value: subcontractor, onChange: setSubcontractor, placeholder: "Enter subcontractor" },
-                { label: "Chassis No", value: chassisNo, onChange: setChassisNo, placeholder: "Enter chassis number" },
-              ].map((field, index) => (
-                <div key={index}>
-                  <label className="text-sm font-medium text-gray-600">{field.label}:</label>
-                  <Input
-                    type={field.type || "text"}
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
-                    placeholder={field.placeholder}
-                  />
-                </div>
-              ))}
+            <p className="text-sm mb-3 text-gray-500">{accessory.accessoryName || "Lifting Sling"}</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">{isRTL ? "المشروع:" : "Project:"}</label>
+                <Input
+                  value={project}
+                  onChange={(e) => setProject(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder={isRTL ? "أدخل اسم المشروع" : "Enter project name"}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">{isRTL ? "تاريخ الفحص الأخير:" : "Last Inspection Date:"}</label>
+                <Input
+                  type="date"
+                  value={lastInspectionDate}
+                  onChange={(e) => setLastInspectionDate(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">{isRTL ? "المقاول الفرعي:" : "Subcontractor:"}</label>
+                <Input
+                  value={subcontractor}
+                  onChange={(e) => setSubcontractor(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder={isRTL ? "أدخل المقاول الفرعي" : "Enter subcontractor"}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">{isRTL ? "رقم الشاسيه:" : "Chassis No:"}</label>
+                <Input
+                  value={chassisNo}
+                  onChange={(e) => setChassisNo(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder={isRTL ? "أدخل رقم الشاسيه" : "Enter chassis number"}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">{isRTL ? "اسم السائق:" : "Driver Name:"}</label>
+                <Input
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder={isRTL ? "أدخل اسم السائق" : "Enter driver name"}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">{isRTL ? "اسم المفتش:" : "Inspector Name:"}</label>
+                <Input
+                  value={inspectorName}
+                  onChange={(e) => setInspectorName(e.target.value)}
+                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  placeholder={isRTL ? "أدخل اسم المفتش" : "Enter inspector name"}
+                />
+              </div>
             </div>
           </div>
+
           {/* Enhanced Inspection Items Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {LIFTING_ACCESSORY_INSPECTION_ITEMS.map((item) => (
@@ -566,7 +924,6 @@ export function LiftingAccessoryMonthlyInspectionDialog({
                     <p className="text-xs text-gray-500 mb-3">
                       {isRTL ? item.descriptionAr : item.description}
                     </p>
-                    {/* Quick Action Buttons */}
                     <div className="flex gap-2 mb-2">
                       <Button
                         size="sm"
@@ -593,7 +950,6 @@ export function LiftingAccessoryMonthlyInspectionDialog({
                         {isRTL ? "لا" : "No"}
                       </Button>
                     </div>
-                    {/* Comments and Actions */}
                     {(responses[item.id]?.status === "failed" || showCommentBox) && (
                       <div className="space-y-2">
                         <Input
@@ -617,26 +973,7 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               </div>
             ))}
           </div>
-          {/* Personnel Information */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
-            <h4 className="font-medium text-lg mb-3 text-gray-800">{isRTL ? "معلومات الأفراد" : "Personnel Information"}</h4>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: isRTL ? "اسم السائق" : "Driver Name", value: driverName, onChange: setDriverName, placeholder: isRTL ? "أدخل اسم السائق" : "Enter driver name" },
-                { label: isRTL ? "اسم المفتش" : "Inspector Name", value: inspectorName, onChange: setInspectorName, placeholder: isRTL ? "أدخل اسم المفتش" : "Enter inspector name" },
-              ].map((field, index) => (
-                <div key={index}>
-                  <label className="text-sm font-medium text-gray-600">{field.label}:</label>
-                  <Input
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
-                    placeholder={field.placeholder}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+
           {/* Progress Summary */}
           <div className="bg-blue-50 p-4 rounded-lg mb-6 shadow-sm">
             <div className="flex justify-between items-center mb-2">
@@ -658,12 +995,14 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               <span>{isRTL ? "فشل" : "Failed"}: {Object.values(responses).filter(r => r.status === "failed").length}</span>
             </div>
           </div>
+
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
           {/* Action Buttons */}
           <div className="flex justify-between pt-4 border-t">
             <Button variant="outline" onClick={handleReset} className="hover:bg-gray-100 transition-all">
@@ -686,6 +1025,7 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               )}
             </div>
           </div>
+
           {/* Reference Information */}
           <div className="text-xs text-gray-500 text-center pt-4 border-t">
             ESPEC-HSE-F09 Issue Date: 17-5-2021 Rev. No. 03
@@ -720,20 +1060,22 @@ export function LiftingAccessoryMonthlyInspectionDialog({
             </Button>
           </div>
         </DialogHeader>
+
         <div className="space-y-6">
           {/* Accessory Info */}
           <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">{isRTL ? "الملحق:" : "Accessory:"}</span>
-                <span className="font-medium ml-2">{accessory.accessoryName}</span>
+                <span className="font-medium ml-2">{accessory.accessoryName || ""}</span>
               </div>
               <div>
-                <span className="text-gray-600">{isRTL ? "رقم الملحق:" : "Accessory ID:"}</span>
-                <span className="font-medium ml-2">{accessory.accessoryId}</span>
+                <span className="text-gray-600">{isRTL ? "الرقم التسلسلي:" : "Serial No:"}</span>
+                <span className="font-medium ml-2">{chassisNo || accessory.accessoryId || ""}</span>
               </div>
             </div>
           </div>
+
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
@@ -749,6 +1091,7 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               />
             </div>
           </div>
+
           {/* Inspection Item */}
           {currentItem && (
             <div className="text-center space-y-4">
@@ -774,6 +1117,7 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               </div>
             </div>
           )}
+
           {/* Response Buttons */}
           <div className="space-y-4">
             <div className="flex justify-center gap-4">
@@ -821,6 +1165,7 @@ export function LiftingAccessoryMonthlyInspectionDialog({
                 </>
               )}
             </div>
+
             {/* Comment Box */}
             {(showCommentBox || responses[currentItem?.id || ""]?.comment) && (
               <div className="space-y-3 p-4 bg-gray-50 rounded-lg shadow-sm">
@@ -851,12 +1196,14 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               </div>
             )}
           </div>
+
           {error && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-4 border-t">
             <Button variant="outline" onClick={handlePrevious} className="hover:bg-gray-100 transition-all">
@@ -885,6 +1232,7 @@ export function LiftingAccessoryMonthlyInspectionDialog({
               )}
             </div>
           </div>
+
           {/* Quick Navigation */}
           <div className="flex justify-center">
             <div className="flex gap-1 overflow-x-auto py-2">
@@ -911,3 +1259,5 @@ export function LiftingAccessoryMonthlyInspectionDialog({
     </Dialog>
   );
 }
+
+export { LIFTING_ACCESSORY_INSPECTION_ITEMS };
