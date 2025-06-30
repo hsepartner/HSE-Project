@@ -9,14 +9,13 @@ export interface Equipment {
   id: string;
   name: string;
   model: string;
-  serialNumber: string;
+  trafficPlateNumber: string;
   category: EquipmentCategory;
   status: OperationalStatus;
   complianceScore: number;
   nextInspectionDate: string;
   purchaseDate: string;
   documents: Document[];
-  notes?: string;
   assignedTo?: string;
   location?: string;
   parentEquipmentId?: string;

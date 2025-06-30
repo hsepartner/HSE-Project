@@ -24,7 +24,7 @@ interface Equipment {
   id: string;
   name: string;
   model: string;
-  serialNumber: string;
+  trafficPlateNumber: string;
   category: string;
   status: "active" | "maintenance" | "decommissioned";
   complianceScore: number;
@@ -52,7 +52,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "1",
     name: "Crawler Crane",
     model: "Liebherr LR 1300",
-    serialNumber: "LR1300-0001",
+    trafficPlateNumber: "DUB-1300-A",
     category: "heavy",
     status: "active",
     complianceScore: 92,
@@ -96,7 +96,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "2",
     name: "Excavator",
     model: "CAT 320",
-    serialNumber: "CAT320-45678",
+    trafficPlateNumber: "DUB-320-B",
     category: "heavy",
     status: "maintenance",
     complianceScore: 65,
@@ -132,7 +132,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "3",
     name: "JCB",
     model: "JCB 3CX",
-    serialNumber: "JCB3CX-78901",
+    trafficPlateNumber: "DUB-3CX-C",
     category: "heavy",
     status: "active",
     complianceScore: 78,
@@ -167,7 +167,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "4",
     name: "Hlab",
     model: "HLAB X1",
-    serialNumber: "HLABX1-12345",
+    trafficPlateNumber: "DUB-X1-D",
     category: "heavy",
     status: "decommissioned",
     complianceScore: 20,
@@ -193,7 +193,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "5",
     name: "Telehandler",
     model: "JLG 4017RS",
-    serialNumber: "JLG4017-56789",
+    trafficPlateNumber: "DUB-4017-E",
     category: "heavy",
     status: "active",
     complianceScore: 85,
@@ -229,7 +229,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "6",
     name: "Wheel Loader",
     model: "CAT 950GC",
-    serialNumber: "CAT950GC-24680",
+    trafficPlateNumber: "DUB-950GC-F",
     category: "heavy",
     status: "maintenance",
     complianceScore: 55,
@@ -264,7 +264,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "7",
     name: "Crawler Crane",
     model: "Liebherr LR 1100",
-    serialNumber: "LR1100-0002",
+    trafficPlateNumber: "DUB-1100-G",
     category: "heavy",
     status: "active",
     complianceScore: 88,
@@ -290,7 +290,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "8",
     name: "Excavator",
     model: "Volvo EC950F",
-    serialNumber: "VOLVO950-0009",
+    trafficPlateNumber: "DUB-950F-H",
     category: "heavy",
     status: "active",
     complianceScore: 95,
@@ -316,7 +316,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "9",
     name: "JCB",
     model: "JCB 4CX",
-    serialNumber: "JCB4CX-56789",
+    trafficPlateNumber: "DUB-4CX-I",
     category: "heavy",
     status: "maintenance",
     complianceScore: 70,
@@ -342,7 +342,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "10",
     name: "Hlab",
     model: "HLAB X2",
-    serialNumber: "HLABX2-67890",
+    trafficPlateNumber: "DUB-X2-J",
     category: "heavy",
     status: "active",
     complianceScore: 60,
@@ -368,7 +368,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "11",
     name: "Telehandler",
     model: "Genie GTH-844",
-    serialNumber: "GENIE844-11223",
+    trafficPlateNumber: "DUB-844-K",
     category: "heavy",
     status: "active",
     complianceScore: 82,
@@ -394,7 +394,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "12",
     name: "Wheel Loader",
     model: "Volvo L90H",
-    serialNumber: "VOLVOL90H-11111",
+    trafficPlateNumber: "DUB-L90H-L",
     category: "heavy",
     status: "active",
     complianceScore: 87,
@@ -420,7 +420,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "13",
     name: "Crawler Crane",
     model: "Zoomlion ZCC2600",
-    serialNumber: "ZCC2600-99001",
+    trafficPlateNumber: "DUB-2600-M",
     category: "heavy",
     status: "maintenance",
     complianceScore: 75,
@@ -446,7 +446,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "14",
     name: "Telehandler",
     model: "Bobcat TL43.80HF",
-    serialNumber: "BOB43-88888",
+    trafficPlateNumber: "DUB-43HF-N",
     category: "heavy",
     status: "decommissioned",
     complianceScore: 40,
@@ -472,7 +472,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "15",
     name: "Wheel Loader",
     model: "Komatsu WA380",
-    serialNumber: "WA380-99999",
+    trafficPlateNumber: "DUB-WA380-O",
     category: "heavy",
     status: "maintenance",
     complianceScore: 58,
@@ -498,7 +498,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     id: "16",
     name: "Excavator",
     model: "Hitachi ZX350",
-    serialNumber: "ZX350-55667",
+    trafficPlateNumber: "DUB-ZX350-P",
     category: "heavy",
     status: "active",
     complianceScore: 90,
@@ -521,6 +521,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
     project: "Project B",
   },
 ];
+
 
 // Equipment types data
 const equipmentTypes = [
@@ -666,7 +667,7 @@ const ShareEquipmentModal = ({
           {equipment && (
             <div className="bg-muted p-3 rounded-md">
               <p className="text-sm font-medium">{equipment.name}</p>
-              <p className="text-xs text-muted-foreground">{equipment.serialNumber}</p>
+              <p className="text-xs text-muted-foreground">{equipment.trafficPlateNumber}</p>
             </div>
           )}
         </div>
@@ -888,34 +889,6 @@ const EquipmentRegistry = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-sm text-gray-600">
-                  {isRTL ? "توزيع نوع المعدات" : "Equipment Type Distribution"}
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {Object.entries(stats.byType).map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between">
-                    <span className="text-sm">{type}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full bg-primary"
-                          style={{
-                            width: `${(count / stats.total || 1) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{count}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-2">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-sm text-gray-600">
                   {isRTL ? "حالة الوثائق" : "Document Status"}
                 </h3>
               </div>
@@ -1005,7 +978,7 @@ const EquipmentRegistry = () => {
           </CardContent>
         </Card>
 
-        {/* Equipment Overview Section */}
+        {/* Equipment Overview Section
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -1053,10 +1026,10 @@ const EquipmentRegistry = () => {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
+          <TabsList className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
             <TabsTrigger
               value="list"
               className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
@@ -1068,12 +1041,6 @@ const EquipmentRegistry = () => {
               className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               {isRTL ? "عرض التفاصيل" : "Detail View"}
-            </TabsTrigger>
-            <TabsTrigger
-              value="hierarchy"
-              className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
-            >
-              {isRTL ? "التسلسل الهرمي" : "Hierarchy"}
             </TabsTrigger>
           </TabsList>
 
@@ -1128,10 +1095,6 @@ const EquipmentRegistry = () => {
                 onShare={() => handleShareEquipment(selectedEquipment)}
               />
             )}
-          </TabsContent>
-
-          <TabsContent value="hierarchy" className="mt-6">
-            <EquipmentHierarchy equipment={projectFilteredEquipment} />
           </TabsContent>
         </Tabs>
 

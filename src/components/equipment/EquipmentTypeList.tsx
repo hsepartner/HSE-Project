@@ -81,7 +81,7 @@ export function EquipmentTypeList({
                     <div>
                       <h3 className="font-medium">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {item.model} • {item.serialNumber}
+                        {item.model} • {item.trafficPlateNumber}
                       </p>
                     </div>
 

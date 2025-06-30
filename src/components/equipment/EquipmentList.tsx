@@ -56,7 +56,7 @@ export function EquipmentList({ equipment: initialEquipment, className, onSelect
   const filteredEquipment = sortedEquipment.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.serialNumber.toLowerCase().includes(searchTerm.toLowerCase());
+                         item.trafficPlateNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
@@ -273,7 +273,7 @@ export function EquipmentList({ equipment: initialEquipment, className, onSelect
                         <div className="min-w-0 flex-1">
                           <div className="font-semibold text-gray-900 truncate text-sm">{item.name}</div>
                           <div className="text-xs text-gray-500 truncate mt-0.5">
-                            {item.model} • {item.serialNumber}
+                            {item.model} • {item.trafficPlateNumber}
                           </div>
                         </div>
                       </div>

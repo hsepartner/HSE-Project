@@ -49,7 +49,7 @@ export function EquipmentMaintenanceLogModal({
   const { toast } = useToast();
 
   const [manufacturer, setManufacturer] = useState(equipment?.model || "");
-  const [serialNumber, setSerialNumber] = useState(equipment?.serialNumber || "");
+  const [trafficPlateNumber, setTrafficPlateNumber] = useState(equipment?.trafficPlateNumber || "");
   const [location, setLocation] = useState(equipment?.location || "");
   const [dateManufactured, setDateManufactured] = useState("");
   const [dateInService, setDateInService] = useState(equipment?.purchaseDate || "");
@@ -112,7 +112,7 @@ export function EquipmentMaintenanceLogModal({
       });
       return false;
     }
-    if (!manufacturer || !serialNumber || !location || !dateInService || !supervisorName) {
+    if (!manufacturer || !trafficPlateNumber || !location || !dateInService || !supervisorName) {
       toast({
         title: isRTL ? "خطأ" : "Error",
         description: isRTL ? "يرجى ملء جميع حقول معلومات المعدات." : "Please fill all equipment information fields.",
@@ -193,7 +193,7 @@ export function EquipmentMaintenanceLogModal({
       equipmentInfo: {
         typeOfEquipment: equipment?.name,
         manufacturer,
-        serialNumber,
+        trafficPlateNumber,
         location,
         dateManufactured,
         dateInService,
@@ -256,8 +256,8 @@ export function EquipmentMaintenanceLogModal({
               <Input id="manufacturer" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} placeholder={isRTL ? "أدخل الشركة المصنعة" : "Enter manufacturer"} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="serial-number">{isRTL ? "الرقم التسلسلي" : "Serial Number"}</Label>
-              <Input id="serial-number" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder={isRTL ? "أدخل الرقم التسلسلي" : "Enter serial number"} />
+              <Label htmlFor="traffic-plate-number">{isRTL ? "رقم اللوحة" : "Plate Number"}</Label>
+              <Input id="traffic-plate-number" value={trafficPlateNumber} onChange={(e) => setTrafficPlateNumber(e.target.value)} placeholder={isRTL ? "أدخل رقم اللوحة" : "Enter plate number"} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">{isRTL ? "موقع المنشأة / المعدات" : "Plant/Equipment Location"}</Label>

@@ -279,10 +279,26 @@ export function EquipmentDetail({
           )}
           <div>
             <h1 className="text-2xl font-bold">{equipment.name}</h1>
-            <p className="text-muted-foreground">{equipment.model} • {equipment.serialNumber}</p>
+            <p className="text-muted-foreground">{equipment.model} • {equipment.trafficPlateNumber}</p>
           </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDailyChecklistOpen(true)}
+          >
+            <ClipboardList className="h-4 w-4 mr-2" />
+            {isRTL ? "الفحص اليومي" : "Daily Inspection"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsMonthlyChecklistOpen(true)}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            {isRTL ? "الفحص الشهري" : "Monthly Inspection"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setIsMaintenanceLogOpen(true)}>
             <ScrollText className="h-4 w-4 mr-2" />
             {isRTL ? "سجل الصيانة" : "Maintenance Log"}
@@ -315,28 +331,8 @@ export function EquipmentDetail({
           )}
         </div>
       </div>
-      {/* Notes Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{isRTL ? "ملاحظات الفحص" : "Inspection Notes"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Textarea
-                placeholder={isRTL ? "أضف ملاحظة..." : "Add a note..."}
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleAddNote}>
-                {isRTL ? "إضافة" : "Add"}
-              </Button>
-            </div>
-            {/* Display existing notes */}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Remove Notes Section and Daily/Monthly Inspection Cards, add two buttons instead */}
+      {/* Removed the old Daily/Monthly Inspection buttons section */}
      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="border-primary/20 hover:shadow-lg transition-shadow duration-300">
@@ -350,8 +346,8 @@ export function EquipmentDetail({
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Tag className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{isRTL ? "الرقم التسلسلي:" : "Serial Number:"}</span>
-                <span className="text-sm font-medium">{equipment.serialNumber}</span>
+                <span className="text-sm text-muted-foreground">{isRTL ? "رقم اللوحة:" : "Plate Number:"}</span>
+                <span className="text-sm font-medium">{equipment.trafficPlateNumber}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -441,114 +437,7 @@ export function EquipmentDetail({
         </Card>
       </div>
 
-      {/* Daily and Monthly Inspection Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Daily Inspection Card */}
-        <Card className="border-primary/20 hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="bg-primary/5 rounded-t-lg pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              {isRTL ? "الفحص اليومي" : "Daily Inspection"}
-            </CardTitle>
-            <CardDescription>
-              {isRTL ? "حالة الفحص اليومي" : "Daily operator inspection status"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {hasPassedTodaysInspection ? (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <span className="text-sm font-medium text-green-600">
-                      {isRTL ? "تم إجراء الفحص اليوم" : "Inspection completed today"}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                    <span className="text-sm font-medium text-yellow-600">
-                      {isRTL ? "لم يتم إجراء الفحص اليوم" : "Inspection needed today"}
-                    </span>
-                  </>
-                )}
-              </div>
-              <Button 
-                variant={hasPassedTodaysInspection ? "outline" : "default"}
-                onClick={() => setIsDailyChecklistOpen(true)}
-              >
-                {hasPassedTodaysInspection ? (
-                  isRTL ? "عرض التفاصيل" : "View Details"
-                ) : (
-                  isRTL ? "بدء الفحص" : "Start Inspection"
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Monthly Technical Inspection Card */}
-        <Card className="border-primary/20 hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="bg-primary/5 rounded-t-lg pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              {isRTL ? "الفحص الفني الشهري" : "Monthly Technical Inspection"}
-            </CardTitle>
-            <CardDescription>
-              {isRTL ? "حالة الفحص الفني الشهري" : "Monthly technical inspection status"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {isMonthlyInspectionDue ? (
-                  <>
-                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-yellow-600">
-                        {isRTL ? "الفحص الفني مطلوب" : "Technical inspection due"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {lastMonthlyInspection ? (
-                          isRTL 
-                            ? `آخر فحص: ${new Date(lastMonthlyInspection.date).toLocaleDateString()}`
-                            : `Last inspection: ${new Date(lastMonthlyInspection.date).toLocaleDateString()}`
-                        ) : (
-                          isRTL ? "لم يتم إجراء فحص سابق" : "No previous inspection"
-                        )}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-green-600">
-                        {isRTL ? "الفحص الفني حديث" : "Technical inspection up to date"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {isRTL 
-                          ? `الفحص القادم: ${new Date(lastMonthlyInspection!.nextInspectionDate).toLocaleDateString()}`
-                          : `Next due: ${new Date(lastMonthlyInspection!.nextInspectionDate).toLocaleDateString()}`}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-              <Button 
-                variant={isMonthlyInspectionDue ? "default" : "outline"}
-                onClick={() => setIsMonthlyChecklistOpen(true)}
-              >
-                {isMonthlyInspectionDue ? (
-                  isRTL ? "إجراء الفحص" : "Perform Inspection"
-                ) : (
-                  isRTL ? "عرض السجل" : "View History"
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      
 
       {/* Rest of the existing content... */}
       
@@ -842,16 +731,40 @@ export function EquipmentDetail({
 
       {/* QR Code Modal */}
       <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
-        <DialogContent className="flex flex-col items-center">
+        <DialogContent className="flex flex-col items-center p-8">
           <DialogHeader>
-            <DialogTitle>{isRTL ? "رمز الاستجابة السريعة للمعدة" : "Equipment QR Code"}</DialogTitle>
+            <DialogTitle>
+              {isRTL ? "رمز الاستجابة السريعة للمعدة" : "Equipment QR Code"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="bg-white p-4 rounded-lg">
-            <QRCode value={equipment.serialNumber || equipment.id || equipment.name} size={180} />
+          <div className="flex flex-col items-center my-4">
+            <QRCode value={equipment.trafficPlateNumber || equipment.id || equipment.name} size={180} />
+            <div className="flex flex-col items-center mt-4">
+              <div className="font-medium text-lg">{equipment.type || equipment.name}</div>
+              <div className="text-base mt-1">
+                {isRTL ? "رقم اللوحة: " : "Plate number: "}
+                <span className="font-semibold">
+                  {equipment.trafficPlateNumber || (isRTL ? "غير متوفر" : "N/A")}
+                </span>
+              </div>
+            </div>
           </div>
-          <Button className="mt-4" onClick={() => setIsQrModalOpen(false)}>
-            {isRTL ? "إغلاق" : "Close"}
-          </Button>
+          <div className="flex gap-4 mt-6">
+            <Button
+              variant="default"
+              className="bg-green-600 hover:bg-green-700 text-white px-6"
+              onClick={() => setIsQrModalOpen(false)}
+            >
+              {isRTL ? "إغلاق" : "Close"}
+            </Button>
+            <Button
+              variant="outline"
+              className="border px-6"
+              onClick={() => window.print()}
+            >
+              {isRTL ? "طباعة" : "Print"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

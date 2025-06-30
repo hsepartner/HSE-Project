@@ -52,7 +52,7 @@ export function ServiceReportModal({
   const [equipmentType, setEquipmentType] = useState(equipment?.name || "");
   const [modelNumber, setModelNumber] = useState(equipment?.model || "");
   const [engineNumber, setEngineNumber] = useState("");
-  const [chassisSerialNumber, setChassisSerialNumber] = useState(equipment?.serialNumber || "");
+  const [trafficPlateNumber, setTrafficPlateNumber] = useState(equipment?.trafficPlateNumber || "");
   const [serviceDate, setServiceDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [warrantyStatus, setWarrantyStatus] = useState<"new_delivery" | "warranty" | "no_warranty" | "">("");
   const [natureOfComplaint, setNatureOfComplaint] = useState("");
@@ -94,7 +94,7 @@ export function ServiceReportModal({
   };
 
   const validateForm = () => {
-    if (!customerName || !serviceLocation || !equipmentType || !modelNumber || !chassisSerialNumber || !serviceDate || !warrantyStatus || !natureOfComplaint || !detailedServiceDescription || !gmgtRepresentativeName || !customerRepresentativeName) {
+    if (!customerName || !serviceLocation || !equipmentType || !modelNumber || !trafficPlateNumber || !serviceDate || !warrantyStatus || !natureOfComplaint || !detailedServiceDescription || !gmgtRepresentativeName || !customerRepresentativeName) {
       toast({
         title: isRTL ? "خطأ" : "Error",
         description: isRTL ? "يرجى ملء جميع الحقول المطلوبة." : "Please fill all required fields.",
@@ -156,7 +156,7 @@ export function ServiceReportModal({
         equipmentType,
         modelNumber,
         engineNumber,
-        chassisSerialNumber,
+        trafficPlateNumber,
         serviceDate,
         warrantyStatus,
       },
@@ -235,8 +235,8 @@ export function ServiceReportModal({
               <Input id="engine-number" value={engineNumber} onChange={(e) => setEngineNumber(e.target.value)} placeholder={isRTL ? "أدخل رقم المحرك" : "Enter engine number"} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="chassis-serial-number">{isRTL ? "رقم الشاسيه / التسلسلي" : "Chassis/Serial Number"}</Label>
-              <Input id="chassis-serial-number" value={chassisSerialNumber} onChange={(e) => setChassisSerialNumber(e.target.value)} placeholder={isRTL ? "أدخل رقم الشاسيه / التسلسلي" : "Enter chassis/serial number"} />
+              <Label htmlFor="traffic-plate-number">{isRTL ? "رقم اللوحة" : "Plate Number"}</Label>
+              <Input id="traffic-plate-number" value={trafficPlateNumber} onChange={(e) => setTrafficPlateNumber(e.target.value)} placeholder={isRTL ? "أدخل رقم اللوحة" : "Enter plate number"} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="service-date">{isRTL ? "تاريخ الخدمة" : "Service Date"}</Label>

@@ -413,14 +413,44 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
     }
   };
 
+  const submitToDummyEndpoint = async (formData: FormData, documentSections: DocumentSection[]) => {
+    const payload = {
+      ...formData,
+      documents: documentSections.map(section => ({
+        id: section.id,
+        files: section.files.map(file => ({
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          status: file.status,
+        })),
+      })),
+    };
+
+    try {
+      // make your developer to add their api here in place of json holder
+      const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      console.log('Dummy submission result:', result);
+      alert('Form submitted successfully (dummy)!');
+    } catch (error) {
+      console.error('Dummy submission failed:', error);
+      alert('Dummy submission failed!');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateStep3()) return;
 
     setIsSubmitting(true);
     try {
+      await submitToDummyEndpoint(formData, documentSections);
       await onSubmit(formData, documentSections);
       onOpenChange(false);
-      // Reset form
       setCurrentStep(1);
       setFormData({
         name: "",

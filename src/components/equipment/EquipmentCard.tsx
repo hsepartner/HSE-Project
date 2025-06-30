@@ -33,7 +33,7 @@ export function EquipmentCard({ equipment, className }: EquipmentCardProps) {
             )}
             <div className="space-y-1 min-w-0">
               <h3 className="font-semibold text-lg leading-none truncate">{equipment.name}</h3>
-              <p className="text-sm text-muted-foreground truncate">{equipment.model} • {equipment.serialNumber}</p>
+              <p className="text-sm text-muted-foreground truncate">{equipment.model} • {equipment.trafficPlateNumber}</p>
             </div>
           </div>
           <StatusBadge status={equipment.status} size="sm" />

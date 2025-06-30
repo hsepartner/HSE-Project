@@ -311,7 +311,7 @@ export function MonthlyInspectionDialog({
         status: "completed",
         equipmentId: equipment.id,
         toolName: equipment.name || "",
-        serialNumber: chassisNo || equipment.serialNumber || "",
+        serialNumber: chassisNo || equipment.trafficPlateNumber || "",
         manufacturer: subcontractor || "",
         modelNumber: "",
         nextInspectionDate,
@@ -491,7 +491,7 @@ export function MonthlyInspectionDialog({
               <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {project}</div>
               <div><span className="font-medium">{isRTL ? "تاريخ الفحص الأخير:" : "Last Inspection Date:"}</span> {lastInspectionDate}</div>
               <div><span className="font-medium">{isRTL ? "المقاول الفرعي:" : "Subcontractor:"}</span> {subcontractor}</div>
-              <div><span className="font-medium">{isRTL ? "رقم الشاسيه:" : "Chassis No:"}</span> {chassisNo}</div>
+              <div><span className="font-medium">{isRTL ? "رقم اللوحة:" : "Plate Number:"}</span> {equipment.trafficPlateNumber}</div>
               <div><span className="font-medium">{isRTL ? "اسم السائق:" : "Driver Name:"}</span> {driverName}</div>
               <div><span className="font-medium">{isRTL ? "اسم المفتش:" : "Inspector Name:"}</span> {inspectorName}</div>
             </div>
@@ -517,7 +517,7 @@ export function MonthlyInspectionDialog({
             <h3 className="font-semibold text-lg mb-3 text-gray-800">{isRTL ? "معلومات المعدات" : "Equipment Information"}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div><span className="font-medium">{isRTL ? "اسم المعدة:" : "Equipment Name:"}</span> {equipment.name}</div>
-              <div><span className="font-medium">{isRTL ? "الرقم التسلسلي:" : "Serial Number:"}</span> {chassisNo || equipment.serialNumber}</div>
+              <div><span className="font-medium">{isRTL ? "الرقم التسلسلي:" : "Serial Number:"}</span> {equipment.trafficPlateNumber}</div>
               <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {project}</div>
             </div>
           </div>
@@ -669,7 +669,7 @@ export function MonthlyInspectionDialog({
                       <div><span className="font-medium">{isRTL ? "المشروع:" : "Project:"}</span> {selectedReport.notes}</div>
                       <div><span className="font-medium">{isRTL ? "تاريخ الفحص:" : "Inspection Date:"}</span> {selectedReport.date.split('T')[0]}</div>
                       <div><span className="font-medium">{isRTL ? "المقاول الفرعي:" : "Subcontractor:"}</span> {selectedReport.manufacturer}</div>
-                      <div><span className="font-medium">{isRTL ? "رقم الشاسيه:" : "Chassis No:"}</span> {selectedReport.serialNumber}</div>
+                      <div><span className="font-medium">{isRTL ? "رقم اللوحة:" : "Plate Number:"}</span> {selectedReport.serialNumber}</div>
                       <div><span className="font-medium">{isRTL ? "اسم السائق:" : "Driver Name:"}</span> {selectedReport.technicianName}</div>
                       <div><span className="font-medium">{isRTL ? "اسم المفتش:" : "Inspector Name:"}</span> {selectedReport.technicianName}</div>
                     </div>
@@ -867,12 +867,12 @@ export function MonthlyInspectionDialog({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">{isRTL ? "رقم الشاسيه:" : "Chassis No:"}</label>
+                <label className="text-sm font-medium text-gray-600">{isRTL ? "رقم اللوحة:" : "Plate Number:"}</label>
                 <Input
-                  value={chassisNo}
+                  value={equipment.trafficPlateNumber}
                   onChange={(e) => setChassisNo(e.target.value)}
                   className="mt-1 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
-                  placeholder={isRTL ? "أدخل رقم الشاسيه" : "Enter chassis number"}
+                  placeholder={isRTL ? "أدخل رقم اللوحة" : "Enter plate number"}
                 />
               </div>
               <div>
@@ -1064,8 +1064,8 @@ export function MonthlyInspectionDialog({
                   <span className="font-medium ml-2">{equipment.name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">{isRTL ? "الرقم التسلسلي:" : "Serial No:"}</span>
-                  <span className="font-medium ml-2">{chassisNo || equipment.serialNumber}</span>
+                  <span className="text-gray-600">{isRTL ? "رقم اللوحة:" : "Plate Number:"}</span>
+                  <span className="font-medium ml-2">{equipment.trafficPlateNumber}</span>
                 </div>
               </div>
             </div>
