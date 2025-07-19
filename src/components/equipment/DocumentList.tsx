@@ -42,7 +42,7 @@ export function DocumentList({ documents: initialDocuments, className }: Documen
   
   // Filter documents based on search and filters
   const filteredDocuments = documents.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (item.name ?? '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "all" || item.type === typeFilter;
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     

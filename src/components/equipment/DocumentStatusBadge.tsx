@@ -19,6 +19,10 @@ export function DocumentStatusBadge({
   onClick
 }: DocumentStatusBadgeProps) {
   const config = DOCUMENT_STATUS_CONFIG[status];
+  if (!config) {
+    console.warn(`Unknown document status: ${status}`);
+    return null;
+  }
   
   // Get the icon name
   const iconName = config.icon;

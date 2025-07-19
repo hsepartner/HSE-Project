@@ -19,6 +19,10 @@ export function DocumentTypeBadge({
   onClick
 }: DocumentTypeBadgeProps) {
   const config = DOCUMENT_TYPE_CONFIG[type];
+  if (!config) {
+    console.warn(`Unknown document type: ${type}`);
+    return null;
+  }
   
   // Get the icon name
   const iconName = config.icon;

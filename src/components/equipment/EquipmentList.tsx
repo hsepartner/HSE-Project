@@ -20,10 +20,9 @@ interface EquipmentListProps {
   onSelect?: (equipment: Equipment) => void;
 }
 
-export function EquipmentList({ equipment: initialEquipment, className, onSelect }: EquipmentListProps) {
+export function EquipmentList({ equipment, className, onSelect }: EquipmentListProps) {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
-  const [equipment] = useState<Equipment[]>(initialEquipment);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<EquipmentCategory | "all">("all");
   const [statusFilter, setStatusFilter] = useState<OperationalStatus | "all">("all");

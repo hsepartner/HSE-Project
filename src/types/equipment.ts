@@ -56,6 +56,11 @@ export const CATEGORY_CONFIG = {
     label: 'Lifting Tools',
     color: 'red-500',
     icon: 'settings'
+  },
+  'commercial': {
+    label: 'Commercial Vehicles',
+    color: 'purple-500',
+    icon: 'truck'
   }
 };
 

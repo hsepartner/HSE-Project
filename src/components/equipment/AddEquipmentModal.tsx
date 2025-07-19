@@ -50,6 +50,7 @@ interface UploadedFile {
   size: number;
   type: string;
   url?: string;
+  fileObject?: File;
   uploadProgress?: number;
   status: 'uploading' | 'completed' | 'error';
 }
@@ -328,6 +329,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
         type: file.type,
         status: 'uploading',
         uploadProgress: 0,
+        fileObject: file,
       };
 
       newFiles.push(uploadedFile);
@@ -414,25 +416,41 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
   };
 
   const submitToDummyEndpoint = async (formData: FormData, documentSections: DocumentSection[]) => {
-    const payload = {
-      ...formData,
-      documents: documentSections.map(section => ({
-        id: section.id,
-        files: section.files.map(file => ({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          status: file.status,
-        })),
-      })),
-    };
+     const allFiles: UploadedFile[] = documentSections
+    .flatMap(section => section.files)
+    .filter((file, index, self) =>
+      file && file.name &&
+      index === self.findIndex(f => f.name === file.name && f.size === file.size)
+    );
+
+  const uploadFormData = new FormData();
+
+  // Append all fields from formData
+  Object.entries(formData).forEach(([key, value]) => {
+    uploadFormData.append(key, value === undefined || value === null || value === '' ? 'null' : value);
+  });
+
+  // Optional: Add document structure info (metadata)
+  documentSections.forEach((section, sectionIndex) => {
+    section.files.forEach((file, fileIndex) => {
+      uploadFormData.append(`documents[${sectionIndex}][id]`, section.id);
+      uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][name]`, file.name);
+      uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][size]`, file.size.toString());
+      uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][type]`, file.type);
+      uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][status]`, file.status);
+    });
+  });
+
+  // Append the actual files
+  allFiles.forEach((file, index) => {
+    uploadFormData.append(`files[${index}]`, file.fileObject, file.name);
+  });
+
 
     try {
-      // make your developer to add their api here in place of json holder
-      const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      const response = await fetch('https://laravel.mysignages.com/api/add/employee', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: uploadFormData,
       });
       const result = await response.json();
       console.log('Dummy submission result:', result);
@@ -480,6 +498,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
 
   // Auto-fill form based on selected equipment type
   React.useEffect(() => {
@@ -568,7 +587,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
           >
             {/* Number badge */}
             <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
-              {index + 1}
+              <PlusCircle className="h-4 w-4" />
             </div>
             <div className="relative">
               <img

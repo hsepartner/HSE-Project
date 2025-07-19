@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import React, { forwardRef, useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Equipment } from "@/types/equipment";
+import { Equipment, EquipmentCategory } from "@/types/equipment";
 import { EquipmentList } from "@/components/equipment/EquipmentList";
 import { EquipmentDetail } from "@/components/equipment/EquipmentDetail";
 import { EquipmentHierarchy } from "@/components/equipment/EquipmentHierarchy";
@@ -19,35 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Updated Equipment interface to include project field
-interface Equipment {
-  id: string;
-  name: string;
-  model: string;
-  trafficPlateNumber: string;
-  category: string;
-  status: "active" | "maintenance" | "decommissioned";
-  complianceScore: number;
-  nextInspectionDate: string;
-  purchaseDate: string;
-  location: string;
-  assignedTo: string;
-  image: string;
-  documents: Array<{
-    id: string;
-    name: string;
-    type: string;
-    status: string;
-    issueDate: string;
-    expiryDate: string;
-    issuedBy: string;
-  }>;
-  parentEquipmentId?: string;
+// Extended Equipment interface to include project field
+interface ExtendedEquipment extends Equipment {
   project: string;
 }
 
-// Sample data (unchanged from your edited code)
-const SAMPLE_EQUIPMENT: Equipment[] = [
+// Sample data as fallback
+const SAMPLE_EQUIPMENT: ExtendedEquipment[] = [
   {
     id: "1",
     name: "Crawler Crane",
@@ -90,6 +68,7 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
         issuedBy: "TechInspect Inc.",
       },
     ],
+    parentEquipmentId: "1",
     project: "Project A",
   },
   {
@@ -522,57 +501,94 @@ const SAMPLE_EQUIPMENT: Equipment[] = [
   },
 ];
 
-
 // Equipment types data
 const equipmentTypes = [
   {
+    id: "1",
     name: "Crawler Crane",
     image: "/images/Crawler Crane.png",
     category: "heavy",
   },
   {
+    id: "2",
     name: "Excavator",
     image: "/images/Excavator.png",
     category: "heavy",
   },
   {
+    id: "3",
     name: "JCB",
     image: "/images/JCB.png",
     category: "heavy",
   },
   {
+    id: "4",
     name: "Hlab",
     image: "/images/hlab.png",
     category: "heavy",
   },
   {
+    id: "5",
     name: "Telehandler",
     image: "/images/TELEHANDLER.png",
     category: "heavy",
   },
   {
+    id: "6",
     name: "Wheel Loader",
     image: "/images/Wheelloader.png",
     category: "heavy",
   },
 ];
 
+// Map API equipment data to ExtendedEquipment format
+function mapApiEquipmentToFrontend(apiEquipment: any): ExtendedEquipment {
+  // Map equipment type to image (customize as needed)
+  const typeImageMap: Record<string, string> = {
+    "Crawler Crane": "/images/Crawler Crane.png",
+    "Excavator": "/images/Excavator.png",
+    "JCB": "/images/JCB.png",
+    "Hlab": "/images/hlab.png",
+    "Telehandler": "/images/TELEHANDLER.png",
+    "Wheel Loader": "/images/Wheelloader.png",
+  };
+
+  // Map documents if present
+  let documents: any[] = [];
+  if (Array.isArray(apiEquipment.documents)) {
+    documents = apiEquipment.documents;
+  } else if (apiEquipment.document) {
+    documents = [apiEquipment.document];
+  }
+
+  return {
+    id: String(apiEquipment.id),
+    name: apiEquipment.name || "",
+    model: apiEquipment.model || "",
+    trafficPlateNumber: apiEquipment.plateNumber || "",
+    category: apiEquipment.category || "unknown",
+    status: apiEquipment.status || "unknown",
+    complianceScore: 0, // You may want to calculate or fetch this
+    nextInspectionDate: apiEquipment.registrationExpiry || "", // Or another relevant date
+    purchaseDate: apiEquipment.purchaseDate || "",
+    location: apiEquipment.location || "",
+    assignedTo: apiEquipment.assignedOperator || "",
+    image: typeImageMap[apiEquipment.name || ""] || "/images/default.png",
+    documents: documents,
+    parentEquipmentId: "", // If you have this info
+    project: "Project A", // Or infer from your logic
+  };
+}
+
 // ShareEquipmentModal component
-const ShareEquipmentModal = ({
-  open,
-  onOpenChange,
-  equipment,
-  onShare,
-  loading,
-  isRTL,
-}: {
+const ShareEquipmentModal = forwardRef<HTMLDivElement, {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  equipment: Equipment | null;
+  equipment: ExtendedEquipment | null;
   onShare: (data: { email?: string; link?: string }) => void;
   loading: boolean;
   isRTL: boolean;
-}) => {
+}>(({ open, onOpenChange, equipment, onShare, loading, isRTL }, ref) => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [shareMethod, setShareMethod] = useState("email");
@@ -682,35 +698,80 @@ const ShareEquipmentModal = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
 
 const EquipmentRegistry = () => {
   const { t, currentLanguage } = useLanguage();
   const isRTL = currentLanguage === "ar";
   const [activeTab, setActiveTab] = useState("list");
   const [viewMode, setViewMode] = useState<'categories' | 'type-list' | 'detail'>('categories');
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(SAMPLE_EQUIPMENT[0]);
+  const [equipmentData, setEquipmentData] = useState<ExtendedEquipment[]>(SAMPLE_EQUIPMENT);
+  const [selectedEquipment, setSelectedEquipment] = useState<ExtendedEquipment | null>(equipmentData[0]);
   const [selectedEquipmentType, setSelectedEquipmentType] = useState<string>("");
-  const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);
+  const [filteredEquipment, setFilteredEquipment] = useState<ExtendedEquipment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState("Project A");
   const { toast } = useToast();
 
+  // Fetch equipment data from API
+  const fetchEquipment = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("https://laravel.mysignages.com/api/get/equipment");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Success fetching equipment:", data);
+      // Ensure we always set an array
+      const equipmentArray = Array.isArray(data.equipment) ? data.equipment : [];
+      // Filter out equipment with missing category or status
+      const filteredEquipment = equipmentArray.filter(
+        eq =>
+          eq.name && eq.name.trim() !== "" &&
+          eq.category && eq.category.trim() !== "" &&
+          eq.status && eq.status.trim() !== ""
+      );
+      // Map API data to frontend format
+      const mappedEquipment = filteredEquipment.map(mapApiEquipmentToFrontend);
+      setEquipmentData(mappedEquipment);
+      setSelectedEquipment(mappedEquipment[0] || null);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      toast({
+        title: isRTL ? "خطأ" : "Error",
+        description: isRTL 
+          ? "فشل في جلب بيانات المعدات. استخدام البيانات الافتراضية."
+          : "Failed to fetch equipment data. Using fallback data.",
+        variant: "destructive",
+      });
+      // Keep SAMPLE_EQUIPMENT as fallback
+      setEquipmentData(SAMPLE_EQUIPMENT);
+      setSelectedEquipment(SAMPLE_EQUIPMENT[0] || null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEquipment();
+  }, [isRTL, toast]);
+
   // Group equipment by type
-  const groupedEquipment = SAMPLE_EQUIPMENT.reduce((acc, equipment) => {
+  const groupedEquipment = Array.isArray(equipmentData) ? equipmentData.reduce((acc, equipment) => {
     if (!acc[equipment.name]) {
       acc[equipment.name] = [];
     }
     acc[equipment.name].push(equipment);
     return acc;
-  }, {} as Record<string, Equipment[]>);
+  }, {} as Record<string, ExtendedEquipment[]>) : {};
 
   // Filter equipment by project
-  const projectFilteredEquipment = SAMPLE_EQUIPMENT.filter(
+  const projectFilteredEquipment = Array.isArray(equipmentData) ? equipmentData.filter(
     (equipment) => equipment.project === selectedProject
-  );
+  ) : [];
 
   // Statistics
   const stats = {
@@ -735,12 +796,15 @@ const EquipmentRegistry = () => {
   };
 
   const handleSelectEquipment = (equipment: Equipment) => {
-    setSelectedEquipment(equipment);
-    setActiveTab("detail");
-    setViewMode("detail");
+    const extendedEquipment = projectFilteredEquipment.find(e => e.id === equipment.id);
+    if (extendedEquipment) {
+      setSelectedEquipment(extendedEquipment);
+      setActiveTab("detail");
+      setViewMode("detail");
+    }
   };
 
-  const handleShareEquipment = (equipment: Equipment) => {
+  const handleShareEquipment = (equipment: ExtendedEquipment) => {
     setSelectedEquipment(equipment);
     setIsShareModalOpen(true);
   };
@@ -755,7 +819,7 @@ const EquipmentRegistry = () => {
     });
   };
 
-  const simulateAction = (action: string) => {
+  const simulateAction = async (action: string) => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -781,7 +845,7 @@ const EquipmentRegistry = () => {
                 : "Manage and monitor all equipment and associated documentation"}
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>
+          <Button onClick={() => setIsModalOpen(true)} disabled={loading}>
             <Plus className="h-4 w-4 mr-2" />
             {isRTL ? "إضافة معدات" : "Add Equipment"}
           </Button>
@@ -978,7 +1042,7 @@ const EquipmentRegistry = () => {
           </CardContent>
         </Card>
 
-        {/* Equipment Overview Section
+        {/* Equipment Overview Section */}
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -1018,7 +1082,10 @@ const EquipmentRegistry = () => {
                       </div>
                       <div className="pt-2 text-center">
                         <h3 className="text-sm font-medium truncate">{type.name}</h3>
-                        <CategoryBadge category={type.category} size="sm" className="mt-1" />
+                        <CategoryBadge category={type.category as EquipmentCategory} size="sm" className="mt-1" />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {projectFilteredEquipment.filter(e => e.name === type.name).length} {isRTL ? "معدات" : "equipment"}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1026,7 +1093,7 @@ const EquipmentRegistry = () => {
               ))}
             </div>
           </CardContent>
-        </Card> */}
+        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
@@ -1048,7 +1115,6 @@ const EquipmentRegistry = () => {
             <EquipmentList
               equipment={projectFilteredEquipment}
               onSelect={handleSelectEquipment}
-              onShare={handleShareEquipment}
             />
           </TabsContent>
 
@@ -1080,10 +1146,12 @@ const EquipmentRegistry = () => {
                 equipmentType={selectedEquipmentType}
                 onBack={() => setViewMode("categories")}
                 onSelectEquipment={(equipment) => {
-                  setSelectedEquipment(equipment);
-                  setViewMode("detail");
+                  const extendedEquipment = filteredEquipment.find(e => e.id === equipment.id);
+                  if (extendedEquipment) {
+                    setSelectedEquipment(extendedEquipment);
+                    setViewMode("detail");
+                  }
                 }}
-                onShareEquipment={handleShareEquipment}
                 isRTL={isRTL}
               />
             )}
@@ -1092,7 +1160,6 @@ const EquipmentRegistry = () => {
               <EquipmentDetail
                 equipment={selectedEquipment}
                 onBack={() => setViewMode("type-list")}
-                onShare={() => handleShareEquipment(selectedEquipment)}
               />
             )}
           </TabsContent>
@@ -1100,11 +1167,11 @@ const EquipmentRegistry = () => {
 
         {/* Footer Actions */}
         <div className="flex justify-between items-center mt-6">
-          <Button variant="outline" className="flex gap-2">
+          <Button variant="outline" className="flex gap-2" disabled={loading}>
             <Video className="h-4 w-4" />
             {isRTL ? "شاهد الفيديو التعليمي" : "Watch Tutorial"}
           </Button>
-          <Button onClick={() => setIsModalOpen(true)}>
+          <Button onClick={() => setIsModalOpen(true)} disabled={loading}>
             <Plus className="h-4 w-4 mr-2" />
             {isRTL ? "إضافة معدات" : "Add Equipment"}
           </Button>
@@ -1118,7 +1185,34 @@ const EquipmentRegistry = () => {
           selectedEquipmentType={selectedEquipmentType}
           setSelectedEquipmentType={setSelectedEquipmentType}
           loading={loading}
-          onSubmit={() => simulateAction(isRTL ? "تسجيل المعدات" : "Equipment registration")}
+          onSubmit={async (formData, documentSections) => {
+            // Real API call to add equipment
+            const allFiles = documentSections.flatMap(section => section.files);
+            const uploadFormData = new FormData();
+            Object.entries(formData).forEach(([key, value]) => {
+              uploadFormData.append(key, value === undefined || value === null || value === '' ? 'null' : value);
+            });
+            documentSections.forEach((section, sectionIndex) => {
+              section.files.forEach((file, fileIndex) => {
+                uploadFormData.append(`documents[${sectionIndex}][id]`, section.id);
+                uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][name]`, file.name);
+                uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][size]`, file.size.toString());
+                uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][type]`, file.type);
+                uploadFormData.append(`documents[${sectionIndex}][files][${fileIndex}][status]`, file.status);
+              });
+            });
+            allFiles.forEach((file, index) => {
+              if (file.fileObject) {
+                uploadFormData.append(`files[${index}]`, file.fileObject, file.name);
+              }
+            });
+            await fetch('https://laravel.mysignages.com/api/add/equipment', {
+              method: 'POST',
+              body: uploadFormData,
+            });
+            await fetchEquipment();
+            setIsModalOpen(false);
+          }}
           isRTL={isRTL}
           onCancel={() => setIsModalOpen(false)}
         />
