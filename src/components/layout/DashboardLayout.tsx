@@ -114,9 +114,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     try {
       setIsLoggingOut(true);
 
+      // Try to call logout API
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          await fetch('https://laravel.mysignages.com/api/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          });
+        } catch (error) {
+          console.error('Logout API error:', error);
+          // Continue with local logout even if API fails
+        }
+      }
+
       // Clear local storage
       localStorage.removeItem("userRole");
       localStorage.removeItem("username");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("authToken");
       localStorage.setItem("loggingOut", "true");
 
       // Show toast

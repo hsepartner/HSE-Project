@@ -7,20 +7,53 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
-import { Eye, EyeOff, LogIn, Mail, ChevronRight, ChevronLeft } from "lucide-react";
-
-// Removed framer-motion import since we're not using it anymore
+import { Eye, EyeOff, LogIn, Mail, ChevronRight, ChevronLeft, UserPlus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LocationState {
   from?: string;
 }
 
+interface LoginResponse {
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role?: string;
+  };
+  token?: string;
+}
+
+interface RegisterResponse {
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
 const LoginPage = () => {
-  const [email, setEmail] = useState('admin');
-  const [password, setPassword] = useState('admin');
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('admin');
+  const [loginPassword, setLoginPassword] = useState('admin');
   const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+
+  // Register form state
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
+  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
+
+  const [activeTab, setActiveTab] = useState('login');
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,56 +69,191 @@ const LoginPage = () => {
     const savedRememberMe = localStorage.getItem('rememberMe');
     
     if (savedRememberMe === 'true' && savedEmail) {
-      setEmail(savedEmail);
+      setLoginEmail(savedEmail);
       setRememberMe(true);
     }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsLoginLoading(true);
 
     try {
-      // This is a simplified version - would typically call an API instead
-      if (email === 'admin' && password === 'admin') {
+      const response = await fetch('https://laravel.mysignages.com/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+        }),
+      });
+
+      const data: LoginResponse = await response.json();
+
+      if (response.ok && data.success) {
         // Save to localStorage if rememberMe is checked
         if (rememberMe) {
-          localStorage.setItem('savedEmail', email);
+          localStorage.setItem('savedEmail', loginEmail);
           localStorage.setItem('rememberMe', 'true');
         } else {
           localStorage.removeItem('savedEmail');
           localStorage.removeItem('rememberMe');
         }
         
-        // Store the user role (in a real app, this would come from the backend)
-        localStorage.setItem('userRole', 'admin');
-        localStorage.setItem('username', email);
+        // Store user data and token
+        localStorage.setItem('userRole', data.user?.role || 'user');
+        localStorage.setItem('username', data.user?.name || loginEmail);
+        localStorage.setItem('userId', data.user?.id || '');
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+        }
         
         toast({
           title: isRTL ? "تم تسجيل الدخول بنجاح" : "Login Successful",
           description: isRTL ? "مرحبًا بك في شريك HSE الخاص بك!" : "Welcome to YourHSE Partner!",
         });
         
-        // Directly navigate to the dashboard without setTimeout
+        // Navigate to the intended page
         navigate(from === "/login" ? "/" : from, { replace: true });
         
         // Force a reload to ensure the app recognizes the auth state change
         window.location.reload();
       } else {
+        // Handle API error response
         toast({
           title: isRTL ? "فشل تسجيل الدخول" : "Login Failed",
-          description: isRTL ? "بيانات الاعتماد غير صالحة. يرجى المحاولة مرة أخرى." : "Invalid credentials. Please try again.",
+          description: data.message || (isRTL ? "بيانات الاعتماد غير صالحة. يرجى المحاولة مرة أخرى." : "Invalid credentials. Please try again."),
           variant: "destructive",
         });
-        setIsLoading(false);
       }
     } catch (error) {
+      console.error('Login error:', error);
+      
+      // Fallback to demo login for admin/admin
+      if (loginEmail === 'admin' && loginPassword === 'admin') {
+        if (rememberMe) {
+          localStorage.setItem('savedEmail', loginEmail);
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('savedEmail');
+          localStorage.removeItem('rememberMe');
+        }
+        
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('username', 'admin');
+        
+        toast({
+          title: isRTL ? "تم تسجيل الدخول بنجاح" : "Login Successful",
+          description: isRTL ? "مرحبًا بك في شريك HSE الخاص بك!" : "Welcome to YourHSE Partner!",
+        });
+        
+        navigate(from === "/login" ? "/" : from, { replace: true });
+        window.location.reload();
+      } else {
+        toast({
+          title: isRTL ? "خطأ في الاتصال" : "Connection Error",
+          description: isRTL ? "حدث خطأ أثناء الاتصال بالخادم." : "An error occurred while connecting to the server.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!registerName.trim()) {
       toast({
-        title: isRTL ? "خطأ في تسجيل الدخول" : "Login Error",
-        description: isRTL ? "حدث خطأ أثناء تسجيل الدخول." : "An error occurred during login.",
+        title: isRTL ? "خطأ في التحقق" : "Validation Error",
+        description: isRTL ? "يرجى إدخال الاسم" : "Please enter your name",
         variant: "destructive",
       });
-      setIsLoading(false);
+      return;
+    }
+
+    if (!registerEmail.trim() || !registerEmail.includes('@')) {
+      toast({
+        title: isRTL ? "خطأ في التحقق" : "Validation Error",
+        description: isRTL ? "يرجى إدخال بريد إلكتروني صالح" : "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (registerPassword.length < 6) {
+      toast({
+        title: isRTL ? "خطأ في التحقق" : "Validation Error",
+        description: isRTL ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (registerPassword !== registerConfirmPassword) {
+      toast({
+        title: isRTL ? "خطأ في التحقق" : "Validation Error",
+        description: isRTL ? "كلمات المرور غير متطابقة" : "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRegisterLoading(true);
+
+    try {
+      const response = await fetch('https://laravel.mysignages.com/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          name: registerName,
+          email: registerEmail,
+          password: registerPassword,
+          password_confirmation: registerConfirmPassword,
+        }),
+      });
+
+      const data: RegisterResponse = await response.json();
+
+      if (response.ok && data.success) {
+        toast({
+          title: isRTL ? "تم إنشاء الحساب بنجاح" : "Account Created Successfully",
+          description: isRTL ? "يمكنك الآن تسجيل الدخول بحسابك الجديد" : "You can now login with your new account",
+        });
+        
+        // Switch to login tab and pre-fill email
+        setActiveTab('login');
+        setLoginEmail(registerEmail);
+        
+        // Clear register form
+        setRegisterName('');
+        setRegisterEmail('');
+        setRegisterPassword('');
+        setRegisterConfirmPassword('');
+      } else {
+        toast({
+          title: isRTL ? "فشل إنشاء الحساب" : "Registration Failed",
+          description: data.message || (isRTL ? "حدث خطأ أثناء إنشاء الحساب" : "An error occurred while creating the account"),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        title: isRTL ? "خطأ في الاتصال" : "Connection Error",
+        description: isRTL ? "حدث خطأ أثناء الاتصال بالخادم." : "An error occurred while connecting to the server.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegisterLoading(false);
     }
   };
 
@@ -98,10 +266,7 @@ const LoginPage = () => {
       description: isRTL ? "مرحبًا بك في شريك HSE الخاص بك!" : "Welcome to YourHSE Partner!",
     });
     
-    // Directly navigate to the dashboard without setTimeout
     navigate(from === "/login" ? "/" : from, { replace: true });
-    
-    // Force a reload to ensure the app recognizes the auth state change
     window.location.reload();
   };
 
@@ -110,7 +275,7 @@ const LoginPage = () => {
       className={`min-h-screen flex bg-background transition-all duration-300 ${isRTL ? 'rtl' : 'ltr'}`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      {/* Left side - Login form */}
+      {/* Left side - Login/Register form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-8">
@@ -122,155 +287,319 @@ const LoginPage = () => {
           </div>
           
           <Card className="border-2 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="space-y-1 text-center pb-4">
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#329D4B] to-[#2A8540] bg-clip-text text-transparent pb-1">
-                {isRTL ? 'تسجيل الدخول' : 'Sign In'}
-              </CardTitle>
-              <CardDescription className="text-base">
-                {isRTL ? 'أدخل بيانات اعتماد لتسجيل الدخول إلى حسابك' : 'Enter your credentials to access your account'}
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-5 px-6">
-              <form onSubmit={handleLogin}>
-                <div className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="font-medium text-sm">
-                      {isRTL ? 'البريد الإلكتروني أو اسم المستخدم' : 'Email or Username'}
-                    </Label>
-                    <div className="relative group">
-                      <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
-                        <Mail className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 rounded-none bg-muted">
+                <TabsTrigger value="login" className="rounded-none">
+                  {isRTL ? 'تسجيل الدخول' : 'Sign In'}
+                </TabsTrigger>
+                <TabsTrigger value="register" className="rounded-none">
+                  {isRTL ? 'إنشاء حساب' : 'Sign Up'}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="login" className="m-0">
+                <CardHeader className="space-y-1 text-center pb-4">
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#329D4B] to-[#2A8540] bg-clip-text text-transparent pb-1">
+                    {isRTL ? 'تسجيل الدخول' : 'Sign In'}
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    {isRTL ? 'أدخل بيانات اعتماد لتسجيل الدخول إلى حسابك' : 'Enter your credentials to access your account'}
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="space-y-5 px-6">
+                  <form onSubmit={handleLogin}>
+                    <div className="space-y-5">
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email" className="font-medium text-sm">
+                          {isRTL ? 'البريد الإلكتروني أو اسم المستخدم' : 'Email or Username'}
+                        </Label>
+                        <div className="relative group">
+                          <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
+                            <Mail className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <Input
+                            id="login-email"
+                            placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                            className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
+                            value={loginEmail}
+                            onChange={(e) => setLoginEmail(e.target.value)}
+                            required
+                          />
+                        </div>
                       </div>
-                      <Input
-                        id="email"
-                        placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-                        className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="font-medium text-sm">
-                        {isRTL ? 'كلمة المرور' : 'Password'}
-                      </Label>
-                      <Button 
-                        type="button" 
-                        variant="link" 
-                        className="p-0 h-auto text-sm font-medium hover:text-primary"
-                        onClick={() => toast({
-                          title: isRTL ? "وظيفة إعادة تعيين كلمة المرور" : "Password Reset",
-                          description: isRTL ? "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني." : "Password reset link has been sent to your email."
-                        })}
-                      >
-                        {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
-                      </Button>
-                    </div>
-                    <div className="relative group">
-                      <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
-                        <LogIn className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="login-password" className="font-medium text-sm">
+                            {isRTL ? 'كلمة المرور' : 'Password'}
+                          </Label>
+                          <Button 
+                            type="button" 
+                            variant="link" 
+                            className="p-0 h-auto text-sm font-medium hover:text-primary"
+                            onClick={() => toast({
+                              title: isRTL ? "وظيفة إعادة تعيين كلمة المرور" : "Password Reset",
+                              description: isRTL ? "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني." : "Password reset link has been sent to your email."
+                            })}
+                          >
+                            {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+                          </Button>
+                        </div>
+                        <div className="relative group">
+                          <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
+                            <LogIn className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <Input
+                            id="login-password"
+                            type={showLoginPassword ? "text" : "password"}
+                            placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
+                            className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={`absolute inset-y-0 ${isRTL ? 'left-0 pl-2' : 'right-0 pr-2'} flex items-center transition-all`}
+                            onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          >
+                            {showLoginPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
-                        className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className={`absolute inset-y-0 ${isRTL ? 'left-0 pl-2' : 'right-0 pr-2'} flex items-center transition-all`}
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        )}
-                      </Button>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="remember" 
+                          checked={rememberMe} 
+                          onCheckedChange={() => setRememberMe(!rememberMe)}
+                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                        <Label 
+                          htmlFor="remember" 
+                          className="text-sm cursor-pointer select-none"
+                        >
+                          {isRTL ? 'تذكرني' : 'Remember me'}
+                        </Label>
+                      </div>
+                      
+                      <div className="transition-transform hover:scale-[1.01] active:scale-[0.98]">
+                        <Button 
+                          type="submit" 
+                          className="w-full py-6 text-base font-medium transition-all bg-gradient-to-r from-[#329D4B] to-[#2A8540] hover:from-[#2A8540] hover:to-[#236D35]"
+                          disabled={isLoginLoading}
+                        >
+                          {isLoginLoading ? (
+                            <div className="flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-foreground mr-2"></div>
+                              {isRTL ? 'جاري تسجيل الدخول...' : 'Signing in...'}
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center">
+                              {isRTL ? (
+                                <>
+                                  تسجيل الدخول
+                                  <ChevronLeft className="ml-2 h-5 w-5" />
+                                </>
+                              ) : (
+                                <>
+                                  Sign In
+                                  <ChevronRight className="ml-2 h-5 w-5" />
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </form>
                   
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="remember" 
-                      checked={rememberMe} 
-                      onCheckedChange={() => setRememberMe(!rememberMe)}
-                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    />
-                    <Label 
-                      htmlFor="remember" 
-                      className="text-sm cursor-pointer select-none"
-                    >
-                      {isRTL ? 'تذكرني' : 'Remember me'}
-                    </Label>
+                  <div className="relative my-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t"></span>
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        {isRTL ? 'أو' : 'Or continue with'}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="transition-transform hover:scale-[1.01] active:scale-[0.98]">
                     <Button 
-                      type="submit" 
-                      className="w-full py-6 text-base font-medium transition-all bg-gradient-to-r from-[#329D4B] to-[#2A8540] hover:from-[#2A8540] hover:to-[#236D35]"
-                      disabled={isLoading}
+                      variant="outline" 
+                      className="w-full h-11 transition-all border-2 hover:border-[#329D4B] hover:text-[#329D4B] flex items-center justify-center gap-2" 
+                      onClick={handleLoginWithGoogle}
                     >
-                      {isLoading ? (
-                        <div className="flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-foreground mr-2"></div>
-                          {isRTL ? 'جاري تسجيل الدخول...' : 'Signing in...'}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center">
-                          {isRTL ? (
-                            <>
-                              تسجيل الدخول
-                              <ChevronLeft className="ml-2 h-5 w-5" />
-                            </>
-                          ) : (
-                            <>
-                              Sign In
-                              <ChevronRight className="ml-2 h-5 w-5" />
-                            </>
-                          )}
-                        </div>
-                      )}
+                      <img 
+                        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                        alt="Google" 
+                        className="h-5 w-5"
+                      />
+                      {isRTL ? 'تسجيل الدخول باستخدام Google' : 'Sign in with Google'}
                     </Button>
                   </div>
-                </div>
-              </form>
-              
-              <div className="relative my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t"></span>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    {isRTL ? 'أو' : 'Or continue with'}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="transition-transform hover:scale-[1.01] active:scale-[0.98]">
-                <Button 
-                  variant="outline" 
-                  className="w-full h-11 transition-all border-2 hover:border-[#329D4B] hover:text-[#329D4B] flex items-center justify-center gap-2" 
-                  onClick={handleLoginWithGoogle}
-                >
-                  <img 
-                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-                    alt="Google" 
-                    className="h-5 w-5"
-                  />
-                  {isRTL ? 'تسجيل الدخول باستخدام Google' : 'Sign in with Google'}
-                </Button>
-              </div>
-            </CardContent>
+                </CardContent>
+              </TabsContent>
+
+              <TabsContent value="register" className="m-0">
+                <CardHeader className="space-y-1 text-center pb-4">
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#329D4B] to-[#2A8540] bg-clip-text text-transparent pb-1">
+                    {isRTL ? 'إنشاء حساب' : 'Create Account'}
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    {isRTL ? 'أدخل بياناتك لإنشاء حساب جديد' : 'Enter your details to create a new account'}
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="space-y-5 px-6">
+                  <form onSubmit={handleRegister}>
+                    <div className="space-y-5">
+                      <div className="space-y-2">
+                        <Label htmlFor="register-name" className="font-medium text-sm">
+                          {isRTL ? 'الاسم الكامل' : 'Full Name'}
+                        </Label>
+                        <div className="relative group">
+                          <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
+                            <UserPlus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <Input
+                            id="register-name"
+                            placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full name'}
+                            className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
+                            value={registerName}
+                            onChange={(e) => setRegisterName(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="register-email" className="font-medium text-sm">
+                          {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
+                        </Label>
+                        <div className="relative group">
+                          <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
+                            <Mail className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <Input
+                            id="register-email"
+                            type="email"
+                            placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                            className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
+                            value={registerEmail}
+                            onChange={(e) => setRegisterEmail(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="register-password" className="font-medium text-sm">
+                          {isRTL ? 'كلمة المرور' : 'Password'}
+                        </Label>
+                        <div className="relative group">
+                          <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
+                            <LogIn className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <Input
+                            id="register-password"
+                            type={showRegisterPassword ? "text" : "password"}
+                            placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
+                            className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
+                            value={registerPassword}
+                            onChange={(e) => setRegisterPassword(e.target.value)}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={`absolute inset-y-0 ${isRTL ? 'left-0 pl-2' : 'right-0 pr-2'} flex items-center transition-all`}
+                            onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                          >
+                            {showRegisterPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="register-confirm-password" className="font-medium text-sm">
+                          {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+                        </Label>
+                        <div className="relative group">
+                          <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none transition-all`}>
+                            <LogIn className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <Input
+                            id="register-confirm-password"
+                            type={showRegisterConfirmPassword ? "text" : "password"}
+                            placeholder={isRTL ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'}
+                            className={`${isRTL ? 'pr-10 text-right' : 'pl-10'} bg-background border-2 h-11 transition-all focus:border-primary`}
+                            value={registerConfirmPassword}
+                            onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={`absolute inset-y-0 ${isRTL ? 'left-0 pl-2' : 'right-0 pr-2'} flex items-center transition-all`}
+                            onClick={() => setShowRegisterConfirmPassword(!showRegisterConfirmPassword)}
+                          >
+                            {showRegisterConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="transition-transform hover:scale-[1.01] active:scale-[0.98]">
+                        <Button 
+                          type="submit" 
+                          className="w-full py-6 text-base font-medium transition-all bg-gradient-to-r from-[#329D4B] to-[#2A8540] hover:from-[#2A8540] hover:to-[#236D35]"
+                          disabled={isRegisterLoading}
+                        >
+                          {isRegisterLoading ? (
+                            <div className="flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-foreground mr-2"></div>
+                              {isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center">
+                              {isRTL ? (
+                                <>
+                                  إنشاء حساب
+                                  <ChevronLeft className="ml-2 h-5 w-5" />
+                                </>
+                              ) : (
+                                <>
+                                  Create Account
+                                  <ChevronRight className="ml-2 h-5 w-5" />
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+                </CardContent>
+              </TabsContent>
+            </Tabs>
             
             <CardFooter className="flex justify-between px-6 pb-6">
               <div className="w-full transition-transform hover:scale-[1.01] active:scale-[0.98]">

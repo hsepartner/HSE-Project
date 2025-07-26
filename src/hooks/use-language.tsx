@@ -40,6 +40,11 @@ const translations: Record<string, Record<string, string>> = {
     "login_successful": "Login Successful",
     "login_failed": "Login Failed",
     "welcome_back": "Welcome back",
+    "register_successful": "Registration Successful",
+    "register_failed": "Registration Failed",
+    "account_created": "Account Created",
+    "validation_error": "Validation Error",
+    "connection_error": "Connection Error",
     "demo_credentials": "Demo Email Credentials",
     "or_use_gmail": "Or use any Gmail address with a password of 6+ characters",
     // New translations
@@ -105,6 +110,11 @@ const translations: Record<string, Record<string, string>> = {
     "login_successful": "تم تسجيل الدخول بنجاح",
     "login_failed": "فشل تسجيل الدخول",
     "welcome_back": "مرحبًا بعودتك",
+    "register_successful": "تم التسجيل بنجاح",
+    "register_failed": "فشل التسجيل",
+    "account_created": "تم إنشاء الحساب",
+    "validation_error": "خطأ في التحقق",
+    "connection_error": "خطأ في الاتصال",
     "demo_credentials": "بيانات الاعتماد التجريبية",
     "or_use_gmail": "أو استخدم أي عنوان بريد إلكتروني من Gmail بكلمة مرور تتكون من 6 أحرف أو أكثر",
     // New translations
